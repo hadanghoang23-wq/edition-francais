@@ -1,17 +1,27 @@
-import { useParams } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { useUnit } from '../../engine/content';
-import { Kicker, Loading, Page, Section, TopBar, WithIpa } from '../../ui/kit';
+import type { GrammarPoint, Unit } from '../../engine/types';
+import { Kicker, Loading, Options, Page, Section, TopBar, WithIpa } from '../../ui/kit';
+import { DrillSet, expandDrills } from '../exercises/Drills';
+import { recordSet } from '../exercises/record';
 import { AudioChip } from '../shared/AudioChip';
 import { accentFor } from './bookUnits';
 
-/** Grammar card (read mode). Interactive drills and the error log arrive in Phase 2. */
+/** Grammar card: rules, verb tables, book examples, then interactive drills whose mistakes go to the error log. */
 export default function GrammarCard() {
   const { unitId, gid } = useParams();
   const unit = useUnit(unitId);
   const g = unit?.grammar.find((x) => x.id === gid);
   if (unit === undefined) return <Loading />;
   if (!unit || !g) return <Loading label="Không tìm thấy thẻ ngữ pháp" />;
-  const accent = accentFor(unit.number);
+  return <GrammarBody unit={unit} g={g} accent={accentFor(unit.number)} />;
+}
+
+function GrammarBody({ unit, g, accent }: { unit: Unit; g: GrammarPoint; accent: string }) {
+  const [tolerant, setTolerant] = useState<'strict' | 'loose'>('strict');
+  const [round, setRound] = useState(0);
+  const qs = useMemo(() => expandDrills(unit, g.id, g.drills ?? []), [unit, g]);
   const verbs = (unit.verbs ?? []).filter((v) => g.verbIds?.includes(v.id));
   return (
     <>
@@ -79,8 +89,21 @@ export default function GrammarCard() {
             {g.compareEn && <div><Kicker>So với tiếng Anh</Kicker><p className="t-body measure mt-2 text-ink2">{g.compareEn}</p></div>}
           </section>
         )}
+        {qs.length > 0 && (
+          <Section title="Exercices" meta={`${qs.length} câu`}>
+            <div className="mt-4 flex items-center justify-between">
+              <span className="t-small text-ink2">Chấm dấu</span>
+              <Options value={tolerant} onChange={setTolerant} options={[['strict', 'Nghiêm'], ['loose', 'Bỏ qua dấu']]} />
+            </div>
+            <DrillSet key={round} qs={qs} tolerant={tolerant === 'loose'} report={(res) => { void recordSet(`grammar:${unit.id}:${g.id}`, unit.id, 'grammaire', res, 'grammar', g.title); }} />
+            <div className="mt-6 flex gap-3">
+              <button className="btn btn-line flex-1" onClick={() => setRound(round + 1)}>Làm lại</button>
+              <Link className="btn btn-text flex-1" to="/practice/errors">Sổ lỗi</Link>
+            </div>
+          </Section>
+        )}
         <div className="gold-rule mt-12" />
-        <p className="t-meta mt-4">Bài luyện tương tác và sổ lỗi sai cho phần ngữ pháp sẽ có ở giai đoạn 2.</p>
+        <p className="t-meta mt-4">Câu sai được ghi vào sổ lỗi và quay lại trong các buổi ôn sau.</p>
       </Page>
     </>
   );

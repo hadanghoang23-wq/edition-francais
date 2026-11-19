@@ -22,10 +22,19 @@ export default function Today() {
     const ret = await retention();
     const learned = new Set((await db.cards.filter((c) => c.deck === 'vocab' && c.introduced && c.reps >= 2).toArray()).map((c) => c.refId)).size;
     const phonErrors = await db.errorLog.where('source').equals('phon').filter((e) => !e.resolved).toArray();
-    return { units, ladders, stats, minutes, q, ret, learned, phonErrors };
+    const now = new Date();
+    const dueErr = await db.errorLog.filter((e) => !e.resolved && e.source !== 'phon' && e.source !== 'spell' && (!e.dueAt || e.dueAt <= now)).count();
+    const results = await db.exerciseResults.toArray();
+    return { units, ladders, stats, minutes, q, ret, learned, phonErrors, dueErr, results };
   }, []);
   if (!data) return <Loading />;
-  const { units, ladders, stats, minutes, q, ret, learned, phonErrors } = data;
+  const { units, ladders, stats, minutes, q, ret, learned, phonErrors, dueErr, results } = data;
+  const best = new Map(results.map((r) => [r.id, r.best]));
+  // Share of a unit's book exercises (of these skills) done, weighted by best score.
+  const skillScore = (u: (typeof units)[number], skills: string[], extra: string[] = []) => {
+    const ids = [...u.exercises.filter((e) => skills.includes(e.skill) && !e.needsDvd).map((e) => e.id), ...extra];
+    return ids.length ? ids.reduce((a, id) => a + (best.get(id) ?? 0), 0) / ids.length : 0;
+  };
   const stepOf = (unitId: string, docId: string) => ladders.find((l) => l.docId === `${unitId}:${docId}`)?.unlocked ?? 0;
 
   // Current unit = first unit whose shadowing ladder is not finished.
@@ -33,7 +42,16 @@ export default function Today() {
     const docs = u.docs.filter((d) => d.shadowing && d.trackId);
     const speaking = docs.length ? docs.reduce((a, d) => a + Math.min(7, stepOf(u.id, d.id)), 0) / (docs.length * 7) : 0;
     const listening = docs.length ? docs.filter((d) => stepOf(u.id, d.id) >= 2).length / docs.length : 0;
-    return { u, docs, speaking, listening };
+    const tracks = [...new Set(docs.map((d) => d.trackId!))];
+    const listenEx = skillScore(u, ['comprehension-orale'], tracks.map((t) => `dictee:${t}`));
+    return {
+      u, docs, speaking,
+      listening: (listening + listenEx) / 2,
+      reading: skillScore(u, ['comprehension-ecrite']),
+      writing: skillScore(u, ['production-ecrite']),
+      grammar: skillScore(u, ['grammaire'], u.grammar.filter((g) => g.drills?.length).map((g) => `grammar:${u.id}:${g.id}`)),
+      vocab: skillScore(u, ['vocabulaire']),
+    };
   });
   const cur = unitProgress.find((p) => p.speaking < 1) ?? unitProgress.at(-1);
   const nextDoc = cur?.docs.slice().sort((a, b) => stepOf(cur.u.id, a.id) - stepOf(cur.u.id, b.id))[0];
@@ -46,6 +64,7 @@ export default function Today() {
     { label: 'Ôn thẻ từ', fr: null, sub: `${q.due.length} đến hạn · ${q.fresh.length} mới`, min: reviewMin, to: '/cards/review', done: q.queue.length === 0 },
     cur && nextDoc ? { label: 'Shadowing', fr: nextDoc.title, sub: `bậc ${nextStep} / 7 · ${STEPS[nextStep - 1].short.toLowerCase()}`, min: Math.round(minutes * 0.4), to: `/studio/${cur.u.id}/${nextDoc.id}`, done: false } : null,
     { label: 'Phonétique', fr: null, sub: lesson.title, min: 10, to: `/lab/lesson/core:${lesson.id}`, done: false },
+    dueErr ? { label: 'Sổ lỗi', fr: null, sub: `${dueErr} lỗi đến hạn ôn`, min: Math.max(3, Math.round(dueErr * 0.5)), to: '/practice/errors', done: false } : null,
     cur && grammar ? { label: 'Bài mới · ngữ pháp', fr: grammar.title, sub: null, min: Math.max(10, minutes - reviewMin - Math.round(minutes * 0.4) - 10), to: `/unit/${cur.u.id}/grammar/${grammar.id}`, done: false } : null,
   ].filter(Boolean) as { label: string; fr: string | null; sub: string | null; min: number; to: string; done: boolean }[];
 
@@ -103,7 +122,7 @@ export default function Today() {
                   <Icon name="arrow" size={20} className="mb-2 text-muted" />
                 </div>
                 <div className="mt-6 grid grid-cols-6 gap-3">
-                  {[['nghe', cur.listening], ['nói', cur.speaking], ['đọc', 0], ['viết', 0], ['ngữ pháp', 0], ['từ vựng', 0]].map(([l, v]) => (
+                  {[['nghe', cur.listening], ['nói', cur.speaking], ['đọc', cur.reading], ['viết', cur.writing], ['ngữ pháp', cur.grammar], ['từ vựng', cur.vocab]].map(([l, v]) => (
                     <div key={l as string}>
                       <div className="h-px bg-[var(--rule)]"><div className="h-px" style={{ width: `${(v as number) * 100}%`, background: 'var(--accent)' }} /></div>
                       <div className="mt-2 truncate text-[10px] font-medium uppercase tracking-[0.1em] text-muted">{l as string}</div>

@@ -18,6 +18,11 @@ import Review from './features/vocab/Review';
 import AddCard from './features/vocab/AddCard';
 import Settings from './features/settings/Settings';
 import GrammarCard from './features/library/GrammarCard';
+import PracticeHub from './features/practice/PracticeHub';
+import { ExercisePage, GroupExercises } from './features/exercises/ExercisePages';
+import { Dictee, GapListen, ListenTracks } from './features/listen/Listening';
+import { Reader, ReadHome } from './features/read/Reading';
+import { AgreementTrainer, ArticleTrainer, ErrorLog, VerbTrainer } from './features/grammar/Trainers';
 import { Icon, type IconName } from './ui/icons';
 import { ErrorBoundary } from './ui/ErrorBoundary';
 
@@ -35,7 +40,7 @@ function useTheme() {
 const TABS: { to: string; label: string; icon: IconName }[] = [
   { to: '/', label: 'Hôm nay', icon: 'today' },
   { to: '/studio', label: 'Studio', icon: 'studio' },
-  { to: '/lab', label: 'Phonétique', icon: 'phonetique' },
+  { to: '/practice', label: 'Luyện tập', icon: 'phonetique' },
   { to: '/cards', label: 'Từ vựng', icon: 'cards' },
   { to: '/library', label: 'Sách', icon: 'book' },
 ];
@@ -43,13 +48,13 @@ const TABS: { to: string; label: string; icon: IconName }[] = [
 function BottomNav() {
   const loc = useLocation();
   // Full-screen practice views hide the tab bar to keep thumbs on the controls.
-  if (/^\/(studio\/.+|cards\/review|lab\/(pairs|spell))/.test(loc.pathname)) return null;
+  if (/^\/(studio\/.+|cards\/review|lab\/(pairs|spell)|practice\/((dictee|gaps)\/.+|verbs|articles|agreement))/.test(loc.pathname)) return null;
   return (
     <nav className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-[var(--rule)]" style={{ background: 'var(--paper)' }}>
       <div className="mx-auto grid max-w-[600px] grid-cols-5 px-2">
         {TABS.map((t) => (
           <NavLink key={t.to} to={t.to} end={t.to === '/'}
-            className={({ isActive }) => `flex min-h-[56px] flex-col items-center justify-center gap-1.5 transition-colors duration-300 ${isActive ? 'text-accent' : 'text-muted'}`}>
+            className={({ isActive }) => `${isActive || (t.to === '/practice' && loc.pathname.startsWith('/lab')) ? 'text-accent' : 'text-muted'} flex min-h-[56px] flex-col items-center justify-center gap-1.5 transition-colors duration-300`}>
             <Icon name={t.icon} size={21} />
             <span className="text-[9.5px] font-medium uppercase tracking-[0.12em]">{t.label}</span>
           </NavLink>
@@ -89,6 +94,19 @@ export default function App() {
         <Route path="/cards/review" element={<Review />} />
         <Route path="/cards/add" element={<AddCard />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/practice" element={<PracticeHub />} />
+        <Route path="/practice/errors" element={<ErrorLog />} />
+        <Route path="/practice/verbs" element={<VerbTrainer />} />
+        <Route path="/practice/articles" element={<ArticleTrainer />} />
+        <Route path="/practice/agreement" element={<AgreementTrainer />} />
+        <Route path="/practice/dictee" element={<ListenTracks mode="dictee" />} />
+        <Route path="/practice/dictee/:trackId" element={<Dictee />} />
+        <Route path="/practice/gaps" element={<ListenTracks mode="gaps" />} />
+        <Route path="/practice/gaps/:trackId" element={<GapListen />} />
+        <Route path="/practice/read" element={<ReadHome />} />
+        <Route path="/practice/read/:unitId/:docId" element={<Reader />} />
+        <Route path="/practice/ex/:group" element={<GroupExercises />} />
+        <Route path="/practice/:group/:unitId/:exId" element={<ExercisePage />} />
       </Routes>
       </ErrorBoundary>
       <BottomNav />

@@ -94,6 +94,12 @@ export default function UnitCover() {
           ))}
         </Section>
 
+        <Section n="06" title="Bài tập" meta={`${unit.exercises.filter((e) => !e.needsDvd).length} bài`}>
+          {unit.exercises.filter((e) => !e.needsDvd).map((e) => (
+            <Row key={e.id} to={`/practice/all/${unit.id}/${e.id}`} n={e.number} title={<span className="serif text-[18px]">{e.instructionFr}</span>} sub={<span className="t-meta">{e.instructionVi}</span>} meta={e.printedPage} />
+          ))}
+        </Section>
+
         <section className="mt-12">
           <div className="gold-rule" />
           <div className="grid grid-cols-3 pt-6 text-center">

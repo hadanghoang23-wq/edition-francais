@@ -11,7 +11,7 @@ export default function LabHome() {
   const errors = useLiveQuery(() => db.errorLog.where('source').equals('phon').filter((e) => !e.resolved).count(), []);
   return (
     <>
-      <TopBar kicker="Phonétique" title="Laboratoire" />
+      <TopBar back="/practice" kicker="Phonétique" title="Laboratoire" />
       <Page>
         <h1 className="t-hero mt-10">La justesse<br /><span className="italic">avant la vitesse.</span></h1>
         <p className="t-body measure mt-6 text-ink2">Các bài viết riêng cho người Việt: vị trí lưỡi, môi, hàm — chỗ nào tiếng Việt giúp được, chỗ nào đánh lừa bạn. Mỗi bài có phần nghe phân biệt và phần nói.</p>

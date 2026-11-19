@@ -34,7 +34,14 @@ export interface StatRow { date: string; shadowMs: number; sentences: number; re
 export interface SettingRow { key: string; value: unknown }
 export interface PitchRow { key: string; data: number[]; updatedAt: Date }
 export interface CustomCardRow { id: string; front: string; back: string; ipa?: string; gender?: 'm' | 'f' | 'mf'; createdAt: Date }
-export interface ErrorLogRow { id?: number; source: string; prompt: string; given: string; expected: string; createdAt: Date; resolved: boolean }
+export interface ErrorLogRow {
+  id?: number; source: string; prompt: string; given: string; expected: string; createdAt: Date; resolved: boolean;
+  ref?: string;          // how to ask it again, e.g. "drill:u01-g5:3", "verb:etre:2", "gender:u01-v006"
+  hint?: string;         // Vietnamese hint shown when re-asked
+  streak?: number;       // correct answers in a row since the mistake (resolved at 2)
+  dueAt?: Date;          // not before this time
+}
+export interface ExerciseResultRow { id: string; unitId: string; skill: string; best: number; last: number; attempts: number; updatedAt: Date }
 
 class StudyDB extends Dexie {
   packs!: Table<PackRow, string>;
@@ -52,6 +59,7 @@ class StudyDB extends Dexie {
   pitch!: Table<PitchRow, string>;
   customCards!: Table<CustomCardRow, string>;
   errorLog!: Table<ErrorLogRow, number>;
+  exerciseResults!: Table<ExerciseResultRow, string>;
 
   constructor() {
     super('edition-study');
@@ -71,6 +79,11 @@ class StudyDB extends Dexie {
       pitch: 'key',
       customCards: 'id',
       errorLog: '++id, source, createdAt, resolved',
+    });
+    // Phase 2: exercise results; error-log entries carry a ref so the item can be asked again.
+    this.version(2).stores({
+      exerciseResults: 'id, unitId, skill, updatedAt',
+      errorLog: '++id, source, createdAt, resolved, ref',
     });
   }
 }

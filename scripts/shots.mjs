@@ -71,6 +71,32 @@ const SCREENS = [
   ['16-review-back', '/cards/review', async (p) => { await p.getByRole('button', { name: /Lật thẻ/iu }).click(); await p.waitForTimeout(800); }],
   ['17-settings', '/settings'],
   ['18-import', '/import'],
+  // Phase 2
+  ['22-practice-hub', '/practice'],
+  ['23-group-nghe', '/practice/ex/nghe'],
+  ['24-ex-gap-checked', '/practice/all/u01/u01-e10', async (p) => {
+    const gaps = p.getByLabel('Điền vào chỗ trống');
+    const n = await gaps.count();
+    for (let i = 0; i < n; i++) await gaps.nth(i).fill(i === 1 ? 'etes' : i === 2 ? 'sommes' : 'suis');
+    await p.getByRole('button', { name: /Kiểm tra/iu }).click(); await p.waitForTimeout(700);
+  }],
+  ['25-ex-match', '/practice/all/u01/u01-e04'],
+  ['26-dictee-checked', '/practice/dictee/t010', async (p) => {
+    await p.getByRole('textbox').first().fill('Bonjour, je mapelle Mathilde');
+    await p.getByRole('button', { name: /Kiểm tra/iu }).click(); await p.waitForTimeout(700);
+  }],
+  ['27-gaps', '/practice/gaps/t017'],
+  ['28-reader-word', '/practice/read/u01/u01-d1', async (p) => {
+    await p.locator('article [role=button]').nth(3).click(); await p.waitForTimeout(900);
+  }],
+  ['29-verbs-wrong', '/practice/verbs', async (p) => {
+    await p.getByLabel('Dạng chia').fill('suis'); await p.getByRole('button', { name: /Kiểm tra/iu }).click(); await p.waitForTimeout(500);
+  }],
+  ['30-articles', '/practice/articles', async (p) => { await p.locator('main button').first().click(); await p.waitForTimeout(500); }],
+  ['31-error-log', '/practice/errors'],
+  ['32-grammar-drills', '/unit/u01/grammar/u01-g1', async (p) => {
+    await p.getByText('Exercices', { exact: false }).last().scrollIntoViewIfNeeded(); await p.waitForTimeout(500);
+  }],
 ];
 
 async function run() {

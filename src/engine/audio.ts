@@ -1,4 +1,5 @@
 import { db } from './db';
+import { unlockTts } from './speech';
 import type { Segment } from './types';
 
 /**
@@ -15,6 +16,7 @@ export function audioContext() {
   return ctx;
 }
 export async function unlockAudio() {
+  unlockTts(); // must run synchronously inside the tap (iOS)
   const c = audioContext();
   if (c.state === 'suspended') await c.resume();
 }

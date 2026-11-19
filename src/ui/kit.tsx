@@ -70,7 +70,7 @@ export function Row({ n, title, sub, meta, to, onClick, children }: { n?: ReactN
     <>
       {n !== undefined && <span className="t-num w-7 shrink-0 pt-[2px] text-[17px] text-accent">{n}</span>}
       <div className="min-w-0 flex-1">
-        <div className="text-[15px] font-normal leading-snug text-ink">{title}</div>
+        <div className="text-[16px] font-medium leading-snug text-ink">{title}</div>
         {sub && <div className="mt-0.5 truncate">{sub}</div>}
       </div>
       {meta !== undefined && <span className="t-num shrink-0 pt-[2px] text-[17px] text-ink2">{meta}</span>}
@@ -103,7 +103,7 @@ export function GenderTag({ gender }: { gender?: Gender }) {
 }
 
 export function TtsBadge() {
-  return <span className="t-label !text-[8.5px] !tracking-[0.18em]" title="Giọng máy (TTS), không phải audio của sách">tts</span>;
+  return <span className="t-label !text-[9.5px] !tracking-[0.14em]" title="Giọng máy (TTS), không phải audio của sách">tts</span>;
 }
 
 export function Sheet({ open, onClose, children, title }: { open: boolean; onClose: () => void; children: ReactNode; title?: ReactNode }) {

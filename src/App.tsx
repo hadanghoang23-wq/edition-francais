@@ -51,7 +51,7 @@ function BottomNav() {
           <NavLink key={t.to} to={t.to} end={t.to === '/'}
             className={({ isActive }) => `flex min-h-[56px] flex-col items-center justify-center gap-1.5 transition-colors duration-300 ${isActive ? 'text-accent' : 'text-muted'}`}>
             <Icon name={t.icon} size={21} />
-            <span className="text-[8.5px] font-normal uppercase tracking-[0.18em]">{t.label}</span>
+            <span className="text-[9.5px] font-medium uppercase tracking-[0.12em]">{t.label}</span>
           </NavLink>
         ))}
       </div>

@@ -12,18 +12,48 @@ export function ttsAvailable() {
   return typeof speechSynthesis !== 'undefined';
 }
 
-export function speak(text: string, { lang = 'fr-FR', rate = 0.9 } = {}): Promise<void> {
-  if (!ttsAvailable()) return Promise.resolve();
-  speechSynthesis.cancel();
-  if (!voice) voice = pickVoice(lang.slice(0, 2));
+/**
+ * iOS only lets speech start from a tap. Call this synchronously at the start of a tap handler
+ * (unlockAudio does): it speaks a silent utterance once, after which later speech is allowed.
+ */
+let ttsUnlocked = false;
+export function unlockTts() {
+  if (ttsUnlocked || !ttsAvailable()) return;
+  try {
+    const u = new SpeechSynthesisUtterance(' ');
+    u.volume = 0;
+    speechSynthesis.speak(u);
+    ttsUnlocked = true;
+  } catch { /* ignore */ }
+}
+
+function waitForVoices(ms = 600): Promise<void> {
+  if (speechSynthesis.getVoices().length) return Promise.resolve();
+  return new Promise((res) => {
+    const t = setTimeout(res, ms);
+    speechSynthesis.addEventListener('voiceschanged', () => { clearTimeout(t); res(); }, { once: true });
+  });
+}
+
+export async function speak(text: string, { lang = 'fr-FR', rate = 0.9 } = {}): Promise<void> {
+  if (!ttsAvailable()) return;
+  // Cancelling and speaking in the same tick makes iOS drop the new utterance: give it a moment.
+  if (speechSynthesis.speaking || speechSynthesis.pending) {
+    speechSynthesis.cancel();
+    await new Promise((r) => setTimeout(r, 150));
+  }
+  if (!voice) { await waitForVoices(); voice = pickVoice(lang.slice(0, 2)); }
   return new Promise((resolve) => {
     const u = new SpeechSynthesisUtterance(text);
     u.lang = lang;
     u.rate = rate;
+    u.volume = 1;
     if (voice) u.voice = voice;
-    u.onend = () => resolve();
-    u.onerror = () => resolve();
+    const guard = setTimeout(resolve, 8000); // never hang if iOS drops the end event
+    u.onend = () => { clearTimeout(guard); resolve(); };
+    u.onerror = () => { clearTimeout(guard); resolve(); };
     speechSynthesis.speak(u);
+    if (speechSynthesis.paused) speechSynthesis.resume();
   });
 }
 if (ttsAvailable()) speechSynthesis.onvoiceschanged = () => { voice = null; };

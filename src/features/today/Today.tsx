@@ -106,7 +106,7 @@ export default function Today() {
                   {[['nghe', cur.listening], ['nói', cur.speaking], ['đọc', 0], ['viết', 0], ['ngữ pháp', 0], ['từ vựng', 0]].map(([l, v]) => (
                     <div key={l as string}>
                       <div className="h-px bg-[var(--rule)]"><div className="h-px" style={{ width: `${(v as number) * 100}%`, background: 'var(--accent)' }} /></div>
-                      <div className="mt-2 truncate text-[9px] uppercase tracking-[0.14em] text-muted">{l as string}</div>
+                      <div className="mt-2 truncate text-[10px] font-medium uppercase tracking-[0.1em] text-muted">{l as string}</div>
                     </div>
                   ))}
                 </div>
@@ -119,7 +119,7 @@ export default function Today() {
                 {[[streak, 'ngày liên tiếp'], [shadowMin, 'phút shadowing'], [sentences, 'câu đã ghi'], [learned, 'từ đã học'], [ret === null ? '—' : `${Math.round(ret * 100)}`, 'nhớ đúng %'], [units.length, 'bài đã nhập']].map(([v, l]) => (
                   <div key={String(l)}>
                     <div className="t-num text-[40px] leading-none">{v}</div>
-                    <div className="t-label mt-2 !text-[9px]">{l}</div>
+                    <div className="t-label mt-2 !text-[10px]">{l}</div>
                   </div>
                 ))}
               </div>

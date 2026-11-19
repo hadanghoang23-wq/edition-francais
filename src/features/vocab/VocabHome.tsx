@@ -48,7 +48,7 @@ export default function VocabHome() {
           <span className="t-label" style={{ color: 'var(--mf)' }}>les deux</span>
         </div>
         <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Tìm một từ…" aria-label="Tìm từ"
-          className="mt-4 w-full border-b border-[var(--rule-strong)] bg-transparent py-3 text-[16px] font-light outline-none placeholder:text-faint focus:border-[var(--ink)]" />
+          className="mt-4 w-full border-b border-[var(--rule-strong)] bg-transparent py-3 text-[16px] outline-none placeholder:text-faint focus:border-[var(--ink)]" />
         {lex === null && <Loading label="Đang mở từ điển" />}
         {[...byUnit.entries()].map(([label, items]) => (
           <Section key={label} title={label} meta={`${items.length} từ`} className="!mt-10">

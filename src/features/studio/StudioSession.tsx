@@ -251,7 +251,7 @@ export default function StudioSession() {
                   <div className="t-label mb-1 transition-colors duration-300" style={{ color: isCur ? accent : undefined }}>{s.label ? `${s.label} · ` : ''}{showSpeaker ? s.speaker : ''}</div>
                 )}
                 <button onClick={() => (running && isCur ? stop() : playOne(k))} onDoubleClick={() => setSheetFor(s)}
-                  className={`serif w-full text-left transition-[font-size,color] duration-500 ease-maison ${isCur ? 'text-[28px] leading-[1.22] text-ink' : 'text-[19px] leading-[1.35] text-muted'}`}>
+                  className={`serif w-full text-left transition-[font-size,color] duration-500 ease-maison ${isCur ? 'text-[29px] leading-[1.22] text-ink' : 'text-[21px] leading-[1.35] text-ink2 opacity-70'}`}>
                   {textHidden ? (
                     <Redacted text={s.text} active={isCur} accent={accent} />
                   ) : isCur ? (
@@ -306,7 +306,7 @@ export default function StudioSession() {
               <Icon name="mic" size={15} />Luyện câu
             </button>
           </div>
-          <p className="t-meta pb-1 text-center !text-[11px]">
+          <p className="t-meta pb-1 text-center !text-[12px]">
             {running ? (current === 7 ? 'Đang ghi cả đoạn…' : 'Chạm câu đang phát để dừng') : 'Chạm một câu để nghe · chạm hai lần để luyện câu'}
           </p>
         </div>

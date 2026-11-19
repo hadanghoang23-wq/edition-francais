@@ -111,7 +111,7 @@ function ReviewCard({ card, item, onRated }: { card: CardRow; item: LexItem; onR
         </>;
       case 'vi-fr':
         return <>
-          <div className="text-[26px] font-light leading-snug">{item.vi}</div>
+          <div className="text-[26px] leading-snug">{item.vi}</div>
           {item.gender && item.pos === 'noun' && <div className="t-meta mt-2">gõ cả mạo từ: le, la, l', un, une…</div>}
           <input ref={input} value={typed} onChange={(e) => setTyped(e.target.value)} disabled={revealed} aria-label="Gõ từ tiếng Pháp"
             onKeyDown={(e) => e.key === 'Enter' && !revealed && checkTyping()} autoCapitalize="off" autoCorrect="off" spellCheck={false}
@@ -164,7 +164,7 @@ function ReviewCard({ card, item, onRated }: { card: CardRow; item: LexItem; onR
               <div className="text-[40px] leading-none"><GenderWord lemma={item.lemma} article={item.article} gender={item.gender} /></div>
             )}
             {card.type !== 'fr-vi' && <div className="ipa mt-2">{item.ipa}</div>}
-            <div className="mt-3 text-[22px] font-light">{item.vi}</div>
+            <div className="mt-3 text-[22px]">{item.vi}</div>
             {item.extra && <div className="t-small mt-1 text-ink2">{item.extra}</div>}
             {item.loan && <div className="t-small mt-3"><span className="t-label mr-2">Gợi nhớ</span>≈ « {item.loan} » trong tiếng Việt</div>}
             {item.note && <div className="t-small mt-2 text-ink2">{item.note}</div>}

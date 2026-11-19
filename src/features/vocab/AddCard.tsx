@@ -27,7 +27,7 @@ export default function AddCard() {
         <label className="mt-10 block"><Kicker>Tiếng Pháp · kèm mạo từ nếu là danh từ</Kicker>
           <input className={`serif ${field} text-[30px]`} value={front} onChange={(e) => setFront(e.target.value)} placeholder="la boulangerie" autoCapitalize="off" /></label>
         <label className="mt-8 block"><Kicker>Nghĩa tiếng Việt</Kicker>
-          <input className={`${field} text-[17px] font-light`} value={back} onChange={(e) => setBack(e.target.value)} placeholder="tiệm bánh mì" /></label>
+          <input className={`${field} text-[17px]`} value={back} onChange={(e) => setBack(e.target.value)} placeholder="tiệm bánh mì" /></label>
         <label className="mt-8 block"><Kicker>IPA · không bắt buộc</Kicker>
           <input className={`ipa ${field} !text-[16px]`} value={ipa} onChange={(e) => setIpa(e.target.value)} placeholder="/bu.lɑ̃ʒ.ʁi/" /></label>
         <div className="mt-8"><Kicker>Giống</Kicker>

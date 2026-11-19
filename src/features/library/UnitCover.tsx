@@ -61,7 +61,7 @@ export default function UnitCover() {
               <span className="t-num w-8 shrink-0 text-[15px]" style={{ color: accent }}>{ROMAN[i] ?? i + 1}</span>
               <span className="min-w-0">
                 <span className="serif block text-[18px] leading-snug">{s.title}{s.needsDvd ? ' · DVD' : ''}</span>
-                <span className="t-label !text-[9px]">{KIND_VI[s.kind] ?? s.kind}</span>
+                <span className="t-label !text-[10px]">{KIND_VI[s.kind] ?? s.kind}</span>
               </span>
               <span className="mx-1 mb-[6px] min-w-[16px] flex-1 border-b border-dotted border-[var(--rule-strong)]" />
               <span className="t-num shrink-0 text-[16px] text-ink2">{s.printedPage}</span>
@@ -98,7 +98,7 @@ export default function UnitCover() {
           <div className="gold-rule" />
           <div className="grid grid-cols-3 pt-6 text-center">
             {[[unit.vocab.length + (unit.countries?.length ?? 0), 'từ'], [unit.exercises.length, 'bài tập'], [unit.grammar.length, 'điểm ngữ pháp']].map(([n, l]) => (
-              <div key={String(l)}><div className="t-num text-[40px] leading-none">{n}</div><div className="t-label mt-2 !text-[9px]">{l}</div></div>
+              <div key={String(l)}><div className="t-num text-[40px] leading-none">{n}</div><div className="t-label mt-2 !text-[10px]">{l}</div></div>
             ))}
           </div>
           <div className="gold-rule mt-6" />

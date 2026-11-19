@@ -108,7 +108,7 @@ function UnitLesson({ unitId, pid }: { unitId: string; pid: string }) {
               {p.letters.map((le) => (
                 <div key={le.l} className="flex flex-col items-center border-b border-[var(--rule)] py-3">
                   <span className="serif text-[34px] leading-none" style={{ color: ['G', 'J', 'E', 'I'].includes(le.l) ? 'var(--accent)' : undefined }}>{le.l}</span>
-                  <span className="ipa mt-1 !text-[11px]">{le.ipa}</span>
+                  <span className="ipa mt-1 !text-[12px]">{le.ipa}</span>
                   <AudioChip audio={{ trackId: p.trackIds[0], segIdx: le.segIdx }} tts={le.l} />
                 </div>
               ))}

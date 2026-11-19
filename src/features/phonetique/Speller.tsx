@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ACCENTS, ALPHABET, TRICKY } from '../../content/frLab';
 import { sleep } from '../../engine/audio';
 import { db } from '../../engine/db';
-import { speak, unlockTts } from '../../engine/speech';
+import { unlockTts } from '../../engine/speech';
 import { Kicker, Options, Page, TopBar, TtsBadge } from '../../ui/kit';
 import { Icon } from '../../ui/icons';
 import { playRefOrTts, useHasAudio } from '../shared/AudioChip';
@@ -101,7 +101,7 @@ function Letters() {
 function Accents() {
   const [target, setTarget] = useState(() => ACCENTS[Math.floor(Math.random() * 5)]);
   const [given, setGiven] = useState<string | null>(null);
-  const say = () => { unlockTts(); return speak(target.name); };
+  const say = () => { unlockTts(); return playRefOrTts(null, target.name); };
   useEffect(() => { say(); }, [target]); // eslint-disable-line react-hooks/exhaustive-deps
   const choose = async (c: string) => {
     if (given) return;

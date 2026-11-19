@@ -6,6 +6,7 @@ import { judgeTyping, type LexItem } from '../features/vocab/lexicon';
 import { db } from './db';
 import { importPack } from './pack';
 import { applyRating, buildQueue, Rating } from './srs';
+import { voiceKey } from './voice';
 
 function tone(hz: number[], sr = 16000, segSec = 0.25) {
   const out = new Float32Array(Math.round(hz.length * segSec * sr));
@@ -39,6 +40,16 @@ describe('pitch', () => {
     const wobbly = normalise(extractContour(tone([150, 200, 120, 210, 115, 205], 16000, 0.12), 16000));
     const r = compareIntonation(native, dtwAlign(native, wobbly));
     expect(r.wobbleMine).toBeGreaterThan(r.wobbleNative);
+  });
+});
+
+describe('voice pack keys', () => {
+  it('hashes text exactly like pipeline/build_voice_pack.py', async () => {
+    expect(await voiceKey('bain')).toBe('f158806ce66c26bb');
+    expect(await voiceKey("l'été")).toBe('c3a67ad75f017839');
+    expect(await voiceKey('l’été')).toBe('c3a67ad75f017839'); // curly apostrophe normalised
+    expect(await voiceKey('  La  France ')).toBe('e93cc3d224173a01');
+    expect(await voiceKey('G')).toBe('54fd1711209fb1c0');
   });
 });
 

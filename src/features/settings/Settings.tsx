@@ -54,9 +54,9 @@ export default function Settings() {
         <Section n="04" title="Gói nội dung" meta={usage ? undefined : ''}>
           {packs?.map((p) => (
             <div key={p.packId} className="flex min-h-[64px] items-center gap-4 border-b border-[var(--rule)] py-3">
-              <span className="t-num text-[28px] leading-none text-ink2">{two(p.manifest.unitNumber)}</span>
+              <span className="t-num text-[28px] leading-none text-ink2">{p.manifest.kind === 'voice' ? <Icon name="speaker" size={22} /> : two(p.manifest.unitNumber)}</span>
               <div className="min-w-0 flex-1"><div className="t-fr-sm italic">{p.manifest.title}</div>
-                <div className="t-meta">{(p.bytes / 1e6).toFixed(1)} MB · nhập {p.importedAt.toLocaleDateString('vi-VN')}</div></div>
+                <div className="t-meta">{(p.bytes / 1e6).toFixed(1)} MB · nhập {p.importedAt.toLocaleDateString('vi-VN')}{p.manifest.credit ? ` · ${p.manifest.credit}` : ''}</div></div>
               <button className="t-label flex min-h-[44px] items-center px-1 !text-ink2" onClick={async () => { if (confirm(`Xoá nội dung ${p.manifest.title}? Tiến độ và bản ghi của bạn vẫn được giữ.`)) { await deletePack(p.packId); flash('Đã xoá gói.'); } }}>Xoá</button>
             </div>
           ))}

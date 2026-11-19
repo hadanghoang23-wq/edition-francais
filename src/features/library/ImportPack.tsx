@@ -75,7 +75,7 @@ export default function ImportPack() {
               <div key={d.packId} className="flex items-baseline gap-3 border-b border-[var(--rule)] py-4">
                 <Icon name="check" size={16} className="text-ok" />
                 <span className="t-fr-sm flex-1 italic">{d.title}</span>
-                <span className="t-meta">{d.tracks} bài nghe · {d.segments} câu{d.replaced ? ' · đã cập nhật' : ''}</span>
+                <span className="t-meta">{d.kind === 'voice' ? `${d.segments} đoạn giọng đọc` : `${d.tracks} bài nghe · ${d.segments} câu`}{d.replaced ? ' · đã cập nhật' : ''}</span>
               </div>
             ))}
             <button className="btn btn-primary mt-8 w-full" onClick={() => nav('/library')}>Mở thư viện</button>

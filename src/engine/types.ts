@@ -3,12 +3,14 @@
 export interface PackManifest {
   packId: string;
   format: number;
-  kind: 'unit';
+  kind: 'unit' | 'voice';
   lang: string;
   uiLang: string;
   book: { title: string; edition: string; publisher: string };
-  unitId: string;
+  unitId: string | null;
   unitNumber: number;
+  credit?: string;
+  clips?: number;
   title: string;
   version: string;
   createdAt: string;

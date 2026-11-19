@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { SegmentPlayer, unlockAudio, type Speed } from '../../engine/audio';
+import { playBlob, SegmentPlayer, unlockAudio, type Speed } from '../../engine/audio';
+import { voiceClip } from '../../engine/voice';
 import { segmentByRef } from '../../engine/content';
 import { db } from '../../engine/db';
 import { speak } from '../../engine/speech';
@@ -32,7 +33,13 @@ export async function playRefOrTts(audio: AudioRef | null | undefined, tts: stri
       return 'book';
     }
   }
-  if (tts) { await speak(tts, { rate: rate === 1 ? 0.9 : rate }); return 'tts'; }
+  if (tts) {
+    // Prefer the offline voice pack (plays like normal audio, ignores the silent switch).
+    const clip = await voiceClip(tts);
+    if (clip) { await playBlob(clip, rate).done; return 'voice'; }
+    await speak(tts, { rate: rate === 1 ? 0.9 : rate });
+    return 'tts';
+  }
   return 'none';
 }
 

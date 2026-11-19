@@ -2,8 +2,9 @@ import { unzipSync, strFromU8 } from 'fflate';
 import { db } from './db';
 import type { PackManifest, Track, Unit } from './types';
 import { ensureVocabCards } from './srs';
+import { clearVoiceCache } from './voice';
 
-export interface ImportResult { packId: string; title: string; tracks: number; segments: number; replaced: boolean }
+export interface ImportResult { packId: string; title: string; tracks: number; segments: number; replaced: boolean; kind?: 'unit' | 'voice' }
 
 async function sha256Hex(data: Uint8Array): Promise<string> {
   const buf = await crypto.subtle.digest('SHA-256', data);
@@ -28,9 +29,23 @@ export async function importPack(file: Blob, onProgress?: (msg: string) => void)
     }
   }
 
+  const replaced = !!(await db.packs.get(manifest.packId));
+
+  // Voice pack: synthetic French clips, one MP3 per spoken text.
+  if (manifest.kind === 'voice') {
+    onProgress?.('Đang lưu giọng đọc…');
+    const clips = Object.keys(files).filter((n) => n.startsWith('voice/') && n.endsWith('.mp3'));
+    await db.transaction('rw', [db.packs, db.audio], async () => {
+      await db.audio.where('packId').equals(manifest.packId).delete();
+      await db.packs.put({ packId: manifest.packId, manifest, importedAt: new Date(), bytes: bytes.byteLength });
+      await db.audio.bulkPut(clips.map((n) => ({ id: `v:${n.slice(6, -4)}`, packId: manifest.packId, blob: new Blob([files[n]], { type: 'audio/mpeg' }) })));
+    });
+    clearVoiceCache();
+    return { packId: manifest.packId, title: manifest.title, tracks: 0, segments: clips.length, replaced, kind: 'voice' };
+  }
+
   const unit = JSON.parse(strFromU8(files['unit.json'])) as Unit;
   const tracks = JSON.parse(strFromU8(files['tracks.json'])) as Track[];
-  const replaced = !!(await db.packs.get(manifest.packId));
 
   onProgress?.('Đang lưu vào máy…');
   await db.transaction('rw', [db.packs, db.units, db.tracks, db.audio, db.pages], async () => {

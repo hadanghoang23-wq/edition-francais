@@ -18,6 +18,8 @@ import Review from './features/vocab/Review';
 import AddCard from './features/vocab/AddCard';
 import Settings from './features/settings/Settings';
 import GrammarCard from './features/library/GrammarCard';
+import { Icon, type IconName } from './ui/icons';
+import { ErrorBoundary } from './ui/ErrorBoundary';
 
 function useTheme() {
   const theme = useLiveQuery(async () => ((await db.settings.get('theme'))?.value as string) ?? 'auto', []);
@@ -26,16 +28,16 @@ function useTheme() {
     if (!theme || theme === 'auto') root.removeAttribute('data-theme');
     else root.setAttribute('data-theme', theme);
     const dark = theme === 'dark' || (theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
-    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', dark ? '#15141D' : '#F3EEE4'));
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', dark ? '#17141B' : '#F6F1E7'));
   }, [theme]);
 }
 
-const TABS = [
-  { to: '/', label: 'Hôm nay', glyph: '◐' },
-  { to: '/studio', label: 'Studio', glyph: '◉' },
-  { to: '/lab', label: 'Phonétique', glyph: 'ʒ' },
-  { to: '/cards', label: 'Từ vựng', glyph: '▤' },
-  { to: '/library', label: 'Sách', glyph: '❡' },
+const TABS: { to: string; label: string; icon: IconName }[] = [
+  { to: '/', label: 'Hôm nay', icon: 'today' },
+  { to: '/studio', label: 'Studio', icon: 'studio' },
+  { to: '/lab', label: 'Phonétique', icon: 'phonetique' },
+  { to: '/cards', label: 'Từ vựng', icon: 'cards' },
+  { to: '/library', label: 'Sách', icon: 'book' },
 ];
 
 function BottomNav() {
@@ -43,13 +45,13 @@ function BottomNav() {
   // Full-screen practice views hide the tab bar to keep thumbs on the controls.
   if (/^\/(studio\/.+|cards\/review|lab\/(pairs|spell))/.test(loc.pathname)) return null;
   return (
-    <nav className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t-2 bg-paper" style={{ borderColor: 'var(--ink)' }}>
-      <div className="mx-auto grid max-w-[640px] grid-cols-5">
+    <nav className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-[var(--rule)]" style={{ background: 'var(--paper)' }}>
+      <div className="mx-auto grid max-w-[600px] grid-cols-5 px-2">
         {TABS.map((t) => (
           <NavLink key={t.to} to={t.to} end={t.to === '/'}
-            className={({ isActive }) => `flex min-h-[54px] flex-col items-center justify-center gap-0.5 ${isActive ? 'text-[var(--accent)]' : 'text-muted'}`}>
-            <span className="serif text-[22px] leading-none" aria-hidden>{t.glyph}</span>
-            <span className="text-[10.5px] font-medium tracking-wide">{t.label}</span>
+            className={({ isActive }) => `flex min-h-[56px] flex-col items-center justify-center gap-1.5 transition-colors duration-300 ${isActive ? 'text-accent' : 'text-muted'}`}>
+            <Icon name={t.icon} size={21} />
+            <span className="text-[8.5px] font-normal uppercase tracking-[0.18em]">{t.label}</span>
           </NavLink>
         ))}
       </div>
@@ -57,10 +59,19 @@ function BottomNav() {
   );
 }
 
+/** New screen, new page: start at the top (hash routing would otherwise keep the old scroll). */
+function useScrollTop() {
+  const loc = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [loc.pathname]);
+}
+
 export default function App() {
   useTheme();
+  useScrollTop();
+  const loc = useLocation();
   return (
     <>
+      <ErrorBoundary resetKey={loc.pathname}>
       <Routes>
         <Route path="/" element={<Today />} />
         <Route path="/library" element={<Library />} />
@@ -79,6 +90,7 @@ export default function App() {
         <Route path="/cards/add" element={<AddCard />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
+      </ErrorBoundary>
       <BottomNav />
     </>
   );

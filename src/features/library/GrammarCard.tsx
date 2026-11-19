@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { useUnit } from '../../engine/content';
-import { Kicker, Page, Rule, TopBar } from '../../ui/kit';
+import { Kicker, Loading, Page, Section, TopBar, WithIpa } from '../../ui/kit';
 import { AudioChip } from '../shared/AudioChip';
 import { accentFor } from './bookUnits';
 
@@ -9,66 +9,78 @@ export default function GrammarCard() {
   const { unitId, gid } = useParams();
   const unit = useUnit(unitId);
   const g = unit?.grammar.find((x) => x.id === gid);
-  if (!unit || !g) return null;
+  if (unit === undefined) return <Loading />;
+  if (!unit || !g) return <Loading label="Không tìm thấy thẻ ngữ pháp" />;
   const accent = accentFor(unit.number);
   const verbs = (unit.verbs ?? []).filter((v) => g.verbIds?.includes(v.id));
   return (
     <>
-      <TopBar back={`/unit/${unit.id}`} kicker={`Unité ${unit.number} · Grammaire · p. ${g.printedPage}`} title={g.title} />
+      <TopBar back={`/unit/${unit.id}`} kicker={`Unité ${unit.number} · Grammaire`} right={<span className="t-label">p. {g.printedPage}</span>} />
       <Page>
-        <h1 className="display mt-6 text-[46px]" style={{ color: accent }}>{g.title}</h1>
-        <section className="mt-6 space-y-5">
+        <h1 className="t-display mt-10">{g.title}</h1>
+        <div className="mt-6 h-px w-12" style={{ background: accent }} />
+
+        <section className="mt-8 space-y-8">
           {g.rules.map((r, i) => (
-            <div key={i} className="border-l-2 pl-3" style={{ borderColor: accent }}>
-              <p className="serif text-[20px] leading-snug">{r.fr}</p>
-              <p className="mt-1 text-[15px] leading-relaxed">{r.vi}</p>
+            <div key={i}>
+              <p className="t-gloss text-[21px] leading-snug">{r.fr}</p>
+              <p className="t-body measure mt-2 text-ink2"><WithIpa text={r.vi} /></p>
             </div>
           ))}
         </section>
+
         {g.pronunciationVi && (
-          <section className="mt-6 card p-4"><Kicker>Khi nói</Kicker><p className="mt-1 text-[15px] leading-relaxed">{g.pronunciationVi}</p></section>
+          <Section title="Khi nói">
+            <p className="t-body measure mt-4 text-ink2"><WithIpa text={g.pronunciationVi} /></p>
+          </Section>
         )}
+
         {verbs.map((v) => (
-          <section key={v.id} className="mt-6">
-            <div className="flex items-baseline gap-2"><h3 className="display text-3xl">{v.infinitive}</h3><span className="ipa text-muted">{v.ipa}</span><span className="text-[14px]">— {v.vi}</span></div>
-            <Rule className="mt-1" />
+          <Section key={v.id} title={<span className="serif normal-case tracking-normal text-[26px] text-ink">{v.infinitive}</span>} meta={<span className="ipa normal-case tracking-normal">{v.ipa}</span>}>
+            <p className="t-small mt-3 text-ink2">{v.vi}</p>
             {v.present && (
-              <table className="mt-1 w-full text-[15px]">
+              <table className="mt-3 w-full">
                 <tbody>
                   {v.present.map(([p, f, ipa]) => (
-                    <tr key={p} className="border-b hairline"><td className="w-24 py-2 text-muted">{p}</td><td className="py-2 font-semibold">{f}</td><td className="ipa py-2 text-right text-[13px] text-muted">{ipa}</td></tr>
+                    <tr key={p} className="border-b border-[var(--rule)]">
+                      <td className="t-gloss w-24 py-3 text-[17px] text-muted">{p}</td>
+                      <td className="serif py-3 text-[20px]">{f}</td>
+                      <td className="ipa py-3 text-right text-[12px]">{ipa}</td>
+                    </tr>
                   ))}
                 </tbody>
               </table>
             )}
-            {v.noteVi && <p className="mt-2 text-[14px] leading-relaxed text-muted">{v.noteVi}</p>}
-          </section>
+            {v.noteVi && <p className="t-small measure mt-4 text-ink2">{v.noteVi}</p>}
+          </Section>
         ))}
-        <section className="mt-8">
-          <Kicker>Ví dụ trong sách</Kicker>
-          <Rule className="mt-1" />
+
+        <Section title="Exemples du livre">
           {g.examples.map((ex, i) => (
-            <div key={i} className="flex items-start gap-3 border-b hairline py-3">
+            <div key={i} className="flex items-start gap-4 border-b border-[var(--rule)] py-4">
               <div className="min-w-0 flex-1">
-                <p className="serif text-[19px] leading-snug">{ex.fr}</p>
-                <p className="text-[14px] text-muted">{ex.vi}</p>
+                <p className="t-fr">{ex.fr}</p>
+                <p className="t-small mt-1 text-ink2">{ex.vi}</p>
               </div>
               {ex.audio && <AudioChip audio={ex.audio} />}
             </div>
           ))}
-        </section>
+        </Section>
+
         {g.exceptions?.length ? (
-          <section className="mt-6"><Kicker>Chú ý</Kicker>
-            <ul className="mt-2 space-y-2 text-[15px] leading-relaxed">{g.exceptions.map((e, i) => <li key={i}>• {e.vi}</li>)}</ul>
-          </section>
+          <Section title="Chú ý">
+            <ul className="mt-4 space-y-4">{g.exceptions.map((e, i) => <li key={i} className="t-body measure flex gap-3 text-ink2"><span className="mt-[11px] h-px w-3 shrink-0 bg-[var(--gold)]" /><span><WithIpa text={e.vi} /></span></li>)}</ul>
+          </Section>
         ) : null}
+
         {(g.compareVi || g.compareEn) && (
-          <section className="mt-6 grid gap-3">
-            {g.compareVi && <div className="card p-4"><Kicker>So với tiếng Việt</Kicker><p className="mt-1 text-[15px] leading-relaxed">{g.compareVi}</p></div>}
-            {g.compareEn && <div className="card p-4"><Kicker>So với tiếng Anh</Kicker><p className="mt-1 text-[15px] leading-relaxed">{g.compareEn}</p></div>}
+          <section className="mt-12 space-y-8">
+            {g.compareVi && <div><Kicker>So với tiếng Việt</Kicker><p className="t-body measure mt-2 text-ink2">{g.compareVi}</p></div>}
+            {g.compareEn && <div><Kicker>So với tiếng Anh</Kicker><p className="t-body measure mt-2 text-ink2">{g.compareEn}</p></div>}
           </section>
         )}
-        <p className="mt-8 text-[13px] text-muted">Bài luyện tương tác và sổ lỗi sai cho phần ngữ pháp sẽ có ở giai đoạn 2.</p>
+        <div className="gold-rule mt-12" />
+        <p className="t-meta mt-4">Bài luyện tương tác và sổ lỗi sai cho phần ngữ pháp sẽ có ở giai đoạn 2.</p>
       </Page>
     </>
   );

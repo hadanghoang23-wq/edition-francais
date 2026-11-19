@@ -31,10 +31,11 @@ export function useMic() {
 
   const sheet = (
     <Sheet open={asking} onClose={() => { setAsking(false); resolver?.(false); }} title="Cho phép dùng micro">
-      <p className="text-[15px] leading-relaxed">Để so sánh giọng bạn với bản gốc, app cần ghi âm. Bản ghi <b>chỉ lưu trong máy</b> và không gửi đi đâu.</p>
-      <p className="mt-3 text-[14px] leading-relaxed text-muted">Trên iPhone: bấm « Cho phép » ở hộp thoại tiếp theo. Nếu lỡ bấm « Không cho phép », vào Cài đặt → Safari → Micro để bật lại.</p>
-      <p className="mt-3 text-[14px] leading-relaxed text-muted">Mẹo: đeo tai nghe khi shadowing để micro không thu lại tiếng loa.</p>
-      <button className="btn btn-ink mb-4 mt-5 w-full" onClick={allow}>Tiếp tục</button>
+      <p className="t-gloss text-[24px] leading-snug">Votre voix, à côté de la leur.</p>
+      <p className="t-body measure mt-4">Để so sánh giọng bạn với bản gốc, app cần ghi âm. Bản ghi <b>chỉ lưu trong máy</b> và không gửi đi đâu.</p>
+      <p className="t-small measure mt-4 text-ink2">Trên iPhone: bấm « Cho phép » ở hộp thoại tiếp theo. Nếu lỡ bấm « Không cho phép », vào Cài đặt → Safari → Micro để bật lại.</p>
+      <p className="t-small measure mt-3 text-ink2">Mẹo: đeo tai nghe khi shadowing để micro không thu lại tiếng loa.</p>
+      <button className="btn btn-primary mb-6 mt-8 w-full" onClick={allow}>Tiếp tục</button>
     </Sheet>
   );
   return { ensure, sheet, error, clearError: () => setError(null) };

@@ -4,7 +4,8 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { decodeBlob, playBlob, sliceMono, unlockAudio } from '../../engine/audio';
 import { segmentByRef } from '../../engine/content';
 import { db, type RecordingRow } from '../../engine/db';
-import { Empty, Kicker, Page, Rule, TopBar } from '../../ui/kit';
+import { Empty, Kicker, Loading, Page, TopBar } from '../../ui/kit';
+import { Icon } from '../../ui/icons';
 import { Waveforms } from '../../ui/viz';
 import { AudioChip } from '../shared/AudioChip';
 
@@ -21,11 +22,12 @@ export default function ThenVsNow() {
   }, [focus]);
   return (
     <>
-      <TopBar back="/studio" kicker="Studio" title="Trước và nay" />
+      <TopBar back="/studio" kicker="Studio" title="Avant · Après" />
       <Page>
-        <h1 className="display vi mt-6 text-[48px]">Trước <i>&</i> nay.</h1>
-        <p className="mt-2 text-[14px] text-muted">Bản ghi đầu tiên và mới nhất của cùng một câu. Nghe để thấy mình đã tiến bộ thế nào.</p>
-        {groups && groups.length === 0 && <Empty title="Chưa đủ bản ghi." body="Ghi âm một câu ít nhất hai lần (ở các ngày khác nhau càng tốt) để so sánh." to="/studio" cta="Mở Studio" />}
+        <h1 className="t-hero mt-10">Avant,<br /><span className="italic">après.</span></h1>
+        <p className="t-body measure mt-6 text-ink2">Bản ghi đầu tiên và mới nhất của cùng một câu. Nghe để thấy mình đã tiến bộ thế nào.</p>
+        {groups === undefined && <Loading />}
+        {groups && groups.length === 0 && <Empty kicker="Chưa đủ bản ghi" title="Il faut deux prises." body="Ghi âm một câu ít nhất hai lần (ở các ngày khác nhau càng tốt) để so sánh." to="/studio" cta="Mở Studio" />}
         {groups?.map(([key, recs]) => <Pair key={key} segKey={key} first={recs[0]} last={recs[recs.length - 1]} count={recs.length} />)}
       </Page>
     </>
@@ -44,20 +46,20 @@ function Pair({ segKey, first, last, count }: { segKey: string; first: Recording
   }, [segKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const d = (x: Date) => x.toLocaleDateString('vi-VN', { day: 'numeric', month: 'short', year: 'numeric' });
   return (
-    <section className="mt-8">
+    <section className="mt-12">
       <div className="flex items-start gap-2">
-        <p className="serif flex-1 text-[22px] leading-snug">{text}</p>
-        {!isTake && trackId && <AudioChip audio={{ trackId, segIdx: Number(idx) }} label="▶ gốc" />}
+        <p className="t-fr flex-1">{text}</p>
+        {!isTake && trackId && <AudioChip audio={{ trackId, segIdx: Number(idx) }} label="gốc" />}
       </div>
-      <Kicker>{count} bản ghi</Kicker>
-      <Rule className="mt-2" />
-      {[['Trước', first], ['Nay', last]].map(([label, r]) => {
+      <Kicker className="mt-2">{count} bản ghi</Kicker>
+      <div className="rule mt-3" />
+      {[['Avant', first], ['Après', last]].map(([label, r]) => {
         const rec = r as RecordingRow;
         return (
-          <div key={label as string} className="flex items-center gap-3 border-b hairline py-3">
-            <div className="w-16"><div className="display vi text-2xl">{label as string}</div><div className="text-[11px] text-muted">{d(rec.createdAt)}</div></div>
-            <div className="min-w-0 flex-1">{waves && <Waveforms native={label === 'Trước' ? waves[0] : waves[1]} height={40} />}</div>
-            <button className="chip" onClick={async () => { await unlockAudio(); playBlob(rec.blob); }}>▶</button>
+          <div key={label as string} className="flex items-center gap-4 border-b border-[var(--rule)] py-4">
+            <div className="w-20"><div className="t-gloss text-[20px]">{label as string}</div><div className="t-meta">{d(rec.createdAt)}</div></div>
+            <div className="min-w-0 flex-1">{waves && <Waveforms native={label === 'Avant' ? waves[0] : waves[1]} height={36} />}</div>
+            <button className="flex h-11 w-11 items-center justify-center text-ink" aria-label="Nghe" onClick={async () => { await unlockAudio(); playBlob(rec.blob); }}><Icon name="play" size={15} /></button>
           </div>
         );
       })}

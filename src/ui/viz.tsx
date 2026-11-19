@@ -14,25 +14,27 @@ function setupCanvas(c: HTMLCanvasElement, h: number) {
   return { g, w, h };
 }
 
-function peaks(samples: Float32Array, buckets: number) {
-  const out = new Float32Array(buckets);
-  const step = Math.max(1, Math.floor(samples.length / buckets));
+/** Smoothed peak envelope, normalised to 0..1. */
+function envelope(samples: Float32Array, points: number) {
+  const out = new Float32Array(points);
+  const step = Math.max(1, Math.floor(samples.length / points));
   let max = 1e-6;
-  for (let b = 0; b < buckets; b++) {
+  for (let b = 0; b < points; b++) {
     let m = 0;
     for (let i = b * step; i < Math.min(samples.length, (b + 1) * step); i += 2) m = Math.max(m, Math.abs(samples[i]));
     out[b] = m;
     max = Math.max(max, m);
   }
-  for (let b = 0; b < buckets; b++) out[b] /= max;
-  return out;
+  const sm = new Float32Array(points);
+  for (let b = 0; b < points; b++) sm[b] = ((out[b - 1] ?? out[b]) + 2 * out[b] + (out[b + 1] ?? out[b])) / 4 / max;
+  return sm;
 }
 
 /**
- * Overlaid waveforms: native (ink, above the axis) and yours (tomato, mirrored below),
- * each stretched to the full width so their shapes can be compared. `progress` draws a playhead.
+ * Waveforms as fine lines: the native speaker above the axis in the accent,
+ * yours mirrored below in ink. Each stretched to the full width.
  */
-export function Waveforms({ native, mine, height = 84, progress }: { native?: Float32Array | null; mine?: Float32Array | null; height?: number; progress?: number }) {
+export function Waveforms({ native, mine, height = 72, progress }: { native?: Float32Array | null; mine?: Float32Array | null; height?: number; progress?: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const c = ref.current;
@@ -41,22 +43,26 @@ export function Waveforms({ native, mine, height = 84, progress }: { native?: Fl
       const { g, w, h } = setupCanvas(c, height);
       g.clearRect(0, 0, w, h);
       const mid = h / 2;
-      const bars = Math.floor(w / 3);
-      const paint = (s: Float32Array, color: string, dir: 1 | -1) => {
-        const p = peaks(s, bars);
-        g.fillStyle = color;
-        for (let i = 0; i < bars; i++) {
-          const v = Math.max(0.03, p[i]) * (mid - 4);
-          g.fillRect(i * 3, dir === 1 ? mid - v : mid, 2, v);
+      const pts = Math.max(60, Math.floor(w / 2));
+      const trace = (s: Float32Array, color: string, dir: 1 | -1, width: number) => {
+        const e = envelope(s, pts);
+        g.beginPath();
+        for (let i = 0; i < pts; i++) {
+          const x = (i / (pts - 1)) * w;
+          const y = mid - dir * Math.max(0.5, e[i] * (mid - 3));
+          i ? g.lineTo(x, y) : g.moveTo(x, y);
         }
+        g.strokeStyle = color; g.lineWidth = width; g.lineJoin = 'round'; g.stroke();
+        g.lineTo(w, mid); g.lineTo(0, mid); g.closePath();
+        g.globalAlpha = 0.07; g.fillStyle = color; g.fill(); g.globalAlpha = 1;
       };
-      if (native) paint(native, cssVar('--ink'), 1);
-      if (mine) paint(mine, cssVar('--tomato'), -1);
       g.fillStyle = cssVar('--rule');
-      g.fillRect(0, mid, w, 1);
+      g.fillRect(0, Math.round(mid), w, 1);
+      if (native) trace(native, cssVar('--accent'), 1, 1.1);
+      if (mine) trace(mine, cssVar('--ink'), -1, 0.9);
       if (progress !== undefined && progress > 0) {
-        g.fillStyle = cssVar('--cobalt');
-        g.fillRect(Math.min(w - 2, progress * w), 0, 2, h);
+        g.fillStyle = cssVar('--gold');
+        g.fillRect(Math.min(w - 1, progress * w), 0, 1, h);
       }
     };
     draw();
@@ -64,14 +70,14 @@ export function Waveforms({ native, mine, height = 84, progress }: { native?: Fl
     ro.observe(c);
     return () => ro.disconnect();
   }, [native, mine, height, progress]);
-  return <canvas ref={ref} className="block h-auto w-full" style={{ height }} aria-label="Dạng sóng: bản gốc phía trên, của bạn phía dưới" />;
+  return <canvas ref={ref} className="block w-full" style={{ height }} aria-label="Dạng sóng: bản gốc phía trên, của bạn phía dưới" />;
 }
 
 /**
- * Intonation overlay: native contour (cobalt) and yours (tomato, dashed) on a semitone scale.
- * Horizontal guides every 3 semitones; the centre line is each speaker's own median pitch.
+ * Intonation overlay on a semitone scale: native contour in the accent, yours in ink.
+ * Hairline guides every 3 semitones; the centre is each speaker's own median pitch.
  */
-export function PitchOverlay({ native, mine, height = 120 }: { native?: Float32Array | null; mine?: Float32Array | null; height?: number }) {
+export function PitchOverlay({ native, mine, height = 112 }: { native?: Float32Array | null; mine?: Float32Array | null; height?: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const c = ref.current;
@@ -79,39 +85,36 @@ export function PitchOverlay({ native, mine, height = 120 }: { native?: Float32A
     const draw = () => {
       const { g, w, h } = setupCanvas(c, height);
       g.clearRect(0, 0, w, h);
-      const range = 9; // ± semitones shown
-      const y = (st: number) => h / 2 - (Math.max(-range, Math.min(range, st)) / range) * (h / 2 - 8);
-      g.strokeStyle = cssVar('--rule');
-      g.lineWidth = 1;
-      for (let s = -range + 3; s < range; s += 3) {
-        g.setLineDash(s === 0 ? [] : [2, 4]);
-        g.beginPath(); g.moveTo(0, y(s)); g.lineTo(w, y(s)); g.stroke();
-      }
-      const line = (a: Float32Array, color: string, width: number, dash: number[]) => {
-        g.strokeStyle = color; g.lineWidth = width; g.setLineDash(dash); g.lineJoin = 'round'; g.lineCap = 'round';
+      const range = 9;
+      const y = (st: number) => h / 2 - (Math.max(-range, Math.min(range, st)) / range) * (h / 2 - 6);
+      g.fillStyle = cssVar('--rule');
+      for (let s = -range + 3; s < range; s += 3) g.fillRect(0, Math.round(y(s)), w, s === 0 ? 1 : 0.5);
+      const line = (a: Float32Array, color: string, width: number) => {
+        g.strokeStyle = color; g.lineWidth = width; g.lineJoin = 'round'; g.lineCap = 'round';
         g.beginPath();
-        let pen = false;
+        // Drawing only: bridge short unvoiced gaps (≤ 8 points) so the contour reads as one phrase, not specks.
+        let last = -1;
         for (let i = 0; i < a.length; i++) {
           const v = a[i];
+          if (Number.isNaN(v)) continue;
           const x = (i / (a.length - 1)) * w;
-          if (Number.isNaN(v)) { pen = false; continue; }
-          if (!pen) { g.moveTo(x, y(v)); pen = true; } else g.lineTo(x, y(v));
+          if (last >= 0 && i - last <= 8) g.lineTo(x, y(v)); else g.moveTo(x, y(v));
+          last = i;
         }
         g.stroke();
       };
-      if (native) line(native, cssVar('--cobalt'), 3, []);
-      if (mine) line(mine, cssVar('--tomato'), 2.2, [6, 4]);
-      g.setLineDash([]);
+      if (native) line(native, cssVar('--accent'), 1.6);
+      if (mine) line(mine, cssVar('--ink'), 1);
     };
     draw();
     const ro = new ResizeObserver(draw);
     ro.observe(c);
     return () => ro.disconnect();
   }, [native, mine, height]);
-  return <canvas ref={ref} className="block w-full" style={{ height }} aria-label="Đường ngữ điệu: xanh là bản gốc, đỏ đứt nét là của bạn" />;
+  return <canvas ref={ref} className="block w-full" style={{ height }} aria-label="Đường ngữ điệu: màu đỏ rượu là bản gốc, màu mực là của bạn" />;
 }
 
-/** Live microphone level, drawn as a breathing bar strip. */
+/** Live microphone level, drawn as a fine moving line. */
 export function LevelMeter({ getLevel, active }: { getLevel: () => number; active: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -120,20 +123,23 @@ export function LevelMeter({ getLevel, active }: { getLevel: () => number; activ
     const hist: number[] = [];
     let raf = 0;
     const loop = () => {
-      const { g, w, h } = setupCanvas(c, 36);
+      const { g, w, h } = setupCanvas(c, 28);
       hist.push(getLevel());
-      const n = Math.floor(w / 4);
+      const n = Math.floor(w / 3);
       while (hist.length > n) hist.shift();
       g.clearRect(0, 0, w, h);
-      g.fillStyle = cssVar('--tomato');
+      g.strokeStyle = cssVar('--accent'); g.lineWidth = 1;
+      g.beginPath();
       hist.forEach((v, i) => {
-        const bh = Math.max(2, v * (h - 2));
-        g.fillRect(w - (hist.length - i) * 4, (h - bh) / 2, 2.5, bh);
+        const x = w - (hist.length - i) * 3;
+        const a = Math.max(0.5, v * (h / 2 - 1));
+        g.moveTo(x, h / 2 - a); g.lineTo(x, h / 2 + a);
       });
+      g.stroke();
       raf = requestAnimationFrame(loop);
     };
     loop();
     return () => cancelAnimationFrame(raf);
   }, [active, getLevel]);
-  return <canvas ref={ref} className="block w-full" style={{ height: 36 }} aria-hidden />;
+  return <canvas ref={ref} className="block w-full" style={{ height: 28 }} aria-hidden />;
 }

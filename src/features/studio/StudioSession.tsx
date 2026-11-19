@@ -7,7 +7,8 @@ import { useTrack, useUnit } from '../../engine/content';
 import { bumpStat, db, type LadderRow } from '../../engine/db';
 import { Recorder } from '../../engine/recorder';
 import type { Segment } from '../../engine/types';
-import { Toast, TopBar } from '../../ui/kit';
+import { DUR, EASE, Loading, ROMAN, Toast, TopBar } from '../../ui/kit';
+import { Icon } from '../../ui/icons';
 import { LevelMeter } from '../../ui/viz';
 import { accentFor } from '../library/bookUnits';
 import { useMic } from '../shared/useMic';
@@ -187,107 +188,126 @@ export default function StudioSession() {
     if (token.current === my) setRunning(false);
   };
 
-  if (!unit || !doc) return null;
-  if (track === null) return <p className="p-6">Không tìm thấy bài nghe.</p>;
-  if (!track) return null;
+
+  if (unit === undefined || (unit && !doc && unit.docs.length === 0)) return <Loading />;
+  if (!unit || !doc) return <Loading label="Không tìm thấy đoạn này" />;
+  if (track === null) return <Loading label="Không tìm thấy bài nghe — hãy nhập lại gói" />;
+  if (!track) return <Loading />;
 
   let lastSpeaker: string | null = null;
 
   return (
     <div className="flex h-full flex-col">
       {mic.sheet}
-      <TopBar back={`/unit/${unit.id}`} kicker={`Studio · piste ${track.number} · p. ${doc.printedPage}`} title={doc.title} />
+      <TopBar back={`/unit/${unit.id}`} kicker={`Studio · piste ${track.number}`} right={<span className="t-label">p. {doc.printedPage}</span>} />
 
-      {/* Ladder */}
-      <div className="border-b hairline px-4 py-3">
-        <div className="mx-auto flex max-w-[640px] items-center gap-1.5">
-          {STEPS.map((s) => {
-            const locked = s.n > unlocked + 1;
-            const done = s.n <= unlocked;
-            const active = s.n === current;
-            return (
-              <button key={s.n} disabled={locked} onClick={() => { stop(); setStep(s.n); setShowHow(true); }}
-                aria-label={`Bước ${s.n}: ${s.short}${locked ? ' (chưa mở)' : ''}`}
-                className="flex h-9 flex-1 items-center justify-center border text-[13px] font-semibold tabular-nums transition-colors"
-                style={{ borderColor: active ? accent : 'var(--rule)', background: done ? accent : active ? 'transparent' : 'transparent', color: done ? '#fff' : locked ? 'var(--muted)' : 'var(--ink)', opacity: locked ? 0.45 : 1, borderWidth: active ? 2 : 1 }}>
-                {locked ? '·' : s.n}
-              </button>
-            );
-          })}
+      {/* Title and ladder: seven roman numerals on a hairline */}
+      <div className="px-6 pt-5">
+        <div className="mx-auto max-w-[600px]">
+          <div className="t-head italic">{doc.title}</div>
+          <div className="mt-4 flex items-center justify-between">
+            {STEPS.map((s) => {
+              const locked = s.n > unlocked + 1;
+              const done = s.n <= unlocked;
+              const active = s.n === current;
+              return (
+                <button key={s.n} disabled={locked} onClick={() => { stop(); setStep(s.n); setShowHow(true); }}
+                  aria-label={`Bậc ${s.n}: ${s.short}${locked ? ' (chưa mở)' : ''}`} aria-current={active ? 'step' : undefined}
+                  className="relative flex h-11 min-w-[40px] items-center justify-center">
+                  <span className="t-num text-[19px] transition-colors duration-300"
+                    style={{ color: active ? accent : done ? 'var(--ink)' : 'var(--faint)' }}>
+                    {locked ? <Icon name="lock" size={12} /> : ROMAN[s.n - 1]}
+                  </span>
+                  {active && <span className="absolute bottom-1.5 left-1/2 h-px w-5 -translate-x-1/2" style={{ background: accent }} />}
+                </button>
+              );
+            })}
+          </div>
+          <button className="block w-full pb-4 text-left" onClick={() => setShowHow(!showHow)}>
+            <span className="t-label" style={{ color: accent }}>Bậc {ROMAN[current - 1]} · {def.title}</span>
+            <AnimatePresence initial={false}>
+              {showHow && (
+                <motion.p initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: DUR, ease: EASE }} className="t-small measure overflow-hidden pt-1 text-ink2">
+                  {def.howVi}{current === 1 && ` (${ladder?.counts[1] ?? 0}/2 lượt)`}
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </button>
+          <div className="rule" />
         </div>
-        <button className="mx-auto mt-2 block w-full max-w-[640px] text-left" onClick={() => setShowHow(!showHow)}>
-          <span className="kicker" style={{ color: accent }}>Bước {current} · {def.title}</span>
-          <AnimatePresence initial={false}>
-            {showHow && (
-              <motion.p initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden text-[13px] leading-snug text-muted">
-                {def.howVi}{current === 1 && ` (${ladder?.counts[1] ?? 0}/2 lượt)`}
-              </motion.p>
-            )}
-          </AnimatePresence>
-        </button>
       </div>
 
       {/* Transcript */}
-      <div className="scroll-area flex-1 overflow-y-auto px-4 pb-64 pt-4">
-        <div className="mx-auto max-w-[640px]">
+      <div className="scroll-area flex-1 overflow-y-auto px-6 pb-72 pt-6">
+        <div className="mx-auto max-w-[600px]">
           {segs.map((s, k) => {
             const isCur = k === idx;
             const showSpeaker = s.speaker && s.speaker !== lastSpeaker;
             lastSpeaker = s.speaker ?? lastSpeaker;
             return (
-              <div key={s.idx} ref={(el) => (lineRefs.current[k] = el)} className="py-1.5">
+              <div key={s.idx} ref={(el) => (lineRefs.current[k] = el)} className={showSpeaker || s.label ? 'pt-5' : 'pt-2'}>
                 {(showSpeaker || s.label) && (
-                  <div className="kicker mt-2" style={{ color: isCur ? accent : undefined }}>{s.label ? `${s.label} · ` : ''}{showSpeaker ? s.speaker : ''}</div>
+                  <div className="t-label mb-1 transition-colors duration-300" style={{ color: isCur ? accent : undefined }}>{s.label ? `${s.label} · ` : ''}{showSpeaker ? s.speaker : ''}</div>
                 )}
                 <button onClick={() => (running && isCur ? stop() : playOne(k))} onDoubleClick={() => setSheetFor(s)}
-                  className={`serif w-full text-left leading-[1.18] transition-[font-size,opacity] duration-200 ${isCur ? 'text-[29px]' : 'text-[22px] opacity-55'}`}>
+                  className={`serif w-full text-left transition-[font-size,color] duration-500 ease-maison ${isCur ? 'text-[28px] leading-[1.22] text-ink' : 'text-[19px] leading-[1.35] text-muted'}`}>
                   {textHidden ? (
                     <Redacted text={s.text} active={isCur} accent={accent} />
                   ) : isCur ? (
-                    <span ref={sweepRef} data-start={s.start} data-end={s.end} className="sweep"
-                      style={{ ['--sweep-color' as any]: `color-mix(in srgb, ${accent} 30%, transparent)`, ['--p' as any]: '0%' }}>{s.text}</span>
+                    <span ref={sweepRef} data-start={s.start} data-end={s.end} className="sweep" style={{ ['--p' as any]: '0%' }}>{s.text}</span>
                   ) : s.text}
                 </button>
-                {showVi && !textHidden && s.vi && <div className={`text-[14px] text-muted ${isCur ? '' : 'opacity-60'}`}>{s.vi}</div>}
+                {showVi && !textHidden && s.vi && <div className={`t-small mt-1 ${isCur ? 'text-ink2' : 'text-faint'}`}>{s.vi}</div>}
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Dock */}
-      <div className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t-2 bg-paper px-4 pt-3" style={{ borderColor: 'var(--ink)' }}>
-        <div className="mx-auto max-w-[640px]">
+      {/* Dock: speeds as words, fine transport, one ring */}
+      <div className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-[var(--rule)] px-6 pt-2" style={{ background: 'var(--paper)' }}>
+        <div className="mx-auto max-w-[600px]">
           <AnimatePresence>
             {phase === 'speak' && (
-              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mb-2">
-                <div className="flex items-center justify-between"><span className="kicker" style={{ color: accent }}>Đến lượt bạn — nhắc lại</span>{recEcho && <span className="kicker text-[var(--tomato)]">● đang ghi</span>}</div>
-                <div className="mt-1 h-1 bg-[var(--rule)]"><div className="h-full" style={{ width: `${speakProgress * 100}%`, background: accent }} /></div>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: DUR, ease: EASE }} className="pt-2">
+                <div className="flex items-center justify-between"><span className="t-label" style={{ color: accent }}>À vous · nhắc lại</span>{recEcho && <span className="t-label !text-accent">đang ghi</span>}</div>
+                <div className="mt-2 h-px bg-[var(--rule)]"><div className="h-px" style={{ width: `${speakProgress * 100}%`, background: accent }} /></div>
               </motion.div>
             )}
           </AnimatePresence>
-          {takeOn && <div className="mb-2"><LevelMeter active getLevel={() => recorder.current.level} /></div>}
-          <div className="flex flex-wrap items-center gap-1.5">
-            {SPEEDS.map((sp) => <button key={sp} className="chip px-2.5" aria-pressed={speed === sp} onClick={() => setSpeed(sp)}>{sp === 1 ? '1×' : sp}</button>)}
-            <button className="chip px-2.5" onClick={() => setLoops(LOOPS[(LOOPS.indexOf(loops) + 1) % LOOPS.length])} aria-label="Số lần lặp mỗi câu">⟲ {loops}</button>
-            {!textHidden && <button className="chip px-2.5" aria-pressed={showVi} onClick={() => setShowVi(!showVi)}>VI</button>}
-            {current === 3 && <button className="chip px-2.5" aria-pressed={recEcho} onClick={() => setRecEcho(!recEcho)}>● Ghi</button>}
+          {takeOn && <div className="pt-2"><LevelMeter active getLevel={() => recorder.current.level} /></div>}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              {SPEEDS.map((sp) => (
+                <button key={sp} className="opt serif text-[18px]" aria-pressed={speed === sp} onClick={() => setSpeed(sp)} aria-label={`Tốc độ ${sp}`}>
+                  <span className="opt-u pb-0.5">{sp === 1 ? '1,0' : String(sp).replace('.', ',')}</span>
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center">
+              <button className="opt gap-1" onClick={() => setLoops(LOOPS[(LOOPS.indexOf(loops) + 1) % LOOPS.length])} aria-label="Số lần lặp mỗi câu" aria-pressed={loops > 1}>
+                <Icon name="loop" size={16} /><span className="t-num text-[17px]">{loops}</span>
+              </button>
+              {!textHidden && <button className="opt t-label !tracking-[0.18em]" aria-pressed={showVi} onClick={() => setShowVi(!showVi)}><span className="opt-u">VI</span></button>}
+              {current === 3 && <button className="opt t-label !tracking-[0.18em]" aria-pressed={recEcho} onClick={() => setRecEcho(!recEcho)}><span className="opt-u">Ghi</span></button>}
+            </div>
           </div>
-          <div className="mt-3 grid grid-cols-[1fr_auto_1fr_1fr] items-center gap-2 pb-1">
-            <button className="btn btn-ghost h-14" aria-label="Câu trước" onClick={() => playOne(Math.max(0, idx - 1))}>⏮</button>
+          <div className="grid grid-cols-[1fr_auto_1fr_auto] items-center gap-2 pb-1 pt-2">
+            <button className="flex h-12 items-center justify-center text-ink" aria-label="Câu trước" onClick={() => playOne(Math.max(0, idx - 1))}><Icon name="prev" size={20} /></button>
             <button onClick={() => (running ? stop() : start(current === 7 ? 0 : idx === segs.length - 1 ? 0 : idx))}
-              aria-label={running ? 'Dừng' : 'Phát'}
-              className="flex h-[68px] w-[68px] items-center justify-center rounded-full text-2xl text-white transition-transform active:scale-95"
-              style={{ background: current === 7 ? 'var(--tomato)' : accent }}>
-              {running ? '◼' : current === 7 ? '●' : '▶'}
+              aria-label={running ? 'Dừng' : current === 7 ? 'Ghi cả đoạn' : 'Phát'}
+              className="flex h-16 w-16 items-center justify-center rounded-full transition-colors duration-300"
+              style={{ border: `1px solid ${current === 7 ? 'var(--accent)' : accent}`, color: current === 7 ? 'var(--accent)' : accent, background: running ? 'var(--accent-soft)' : 'transparent' }}>
+              <Icon name={running ? 'stop' : current === 7 ? 'record' : 'play'} size={running ? 16 : 22} />
             </button>
-            <button className="btn btn-ghost h-14" aria-label="Câu sau" onClick={() => playOne(Math.min(segs.length - 1, idx + 1))}>⏭</button>
-            <button className="btn btn-ink h-14 flex-col !gap-0 px-1 text-[12px]" onClick={() => { stop(); setSheetFor(segs[idx]); }}>
-              <span className="text-lg leading-none">◉</span>Luyện câu
+            <button className="flex h-12 items-center justify-center text-ink" aria-label="Câu sau" onClick={() => playOne(Math.min(segs.length - 1, idx + 1))}><Icon name="next" size={20} /></button>
+            <button className="btn btn-line !min-h-[48px] !px-3" onClick={() => { stop(); setSheetFor(segs[idx]); }}>
+              <Icon name="mic" size={15} />Luyện câu
             </button>
           </div>
-          <p className="pb-1 text-center text-[11px] text-muted">
-            {running ? (current === 7 ? 'Đang ghi cả đoạn…' : 'Chạm vào câu đang phát để dừng') : 'Chạm một câu để nghe · ▶ phát từ câu đang chọn · chạm hai lần để luyện câu'}
+          <p className="t-meta pb-1 text-center !text-[11px]">
+            {running ? (current === 7 ? 'Đang ghi cả đoạn…' : 'Chạm câu đang phát để dừng') : 'Chạm một câu để nghe · chạm hai lần để luyện câu'}
           </p>
         </div>
       </div>
@@ -298,12 +318,12 @@ export default function StudioSession() {
   );
 }
 
-/** Text hidden: draw ink bars the length of each word, like a redacted proof. */
+/** Text hidden: a fine rule the length of each word, like a redacted proof. */
 function Redacted({ text, active, accent }: { text: string; active: boolean; accent: string }) {
   return (
-    <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-2 py-1 align-middle">
+    <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-3 py-2 align-middle">
       {text.split(/\s+/).map((w, i) => (
-        <span key={i} className="inline-block h-[0.42em]" style={{ width: `${Math.max(1, w.length) * 0.42}em`, background: active ? accent : 'var(--ink)', opacity: active ? 0.85 : 0.25 }} />
+        <span key={i} className="inline-block h-[2px]" style={{ width: `${Math.max(1, w.length) * 0.4}em`, background: active ? accent : 'var(--faint)' }} />
       ))}
     </span>
   );

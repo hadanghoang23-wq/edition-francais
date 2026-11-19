@@ -6,6 +6,7 @@ import { db } from '../../engine/db';
 import { speak } from '../../engine/speech';
 import type { AudioRef } from '../../engine/types';
 import { TtsBadge } from '../../ui/kit';
+import { Icon } from '../../ui/icons';
 
 const shared = { player: null as SegmentPlayer | null };
 export function sharedPlayer() {
@@ -49,8 +50,11 @@ export function AudioChip({ audio, tts, label = '▶', rate = 1 }: { audio?: Aud
     try { await playRefOrTts(has ? audio : null, tts, rate); } finally { lock.current = false; setBusy(false); }
   };
   return (
-    <button onClick={play} aria-label="Nghe" className={`chip shrink-0 gap-1 ${busy ? 'text-[var(--accent)]' : ''}`}>
-      <span aria-hidden>{busy ? '◼' : label}</span>{!has && <TtsBadge />}
+    <button onClick={play} aria-label={has ? 'Nghe audio của sách' : 'Nghe giọng máy (TTS)'}
+      className={`-mr-2 flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center gap-1.5 px-2 transition-colors duration-300 ${busy ? 'text-accent' : 'text-ink2'}`}>
+      {label !== '▶' && <span className="t-label !text-ink2">{label.replace('▶', '').trim()}</span>}
+      <Icon name={busy ? 'stop' : 'speaker'} size={busy ? 14 : 19} />
+      {!has && <TtsBadge />}
     </button>
   );
 }

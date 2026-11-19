@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useUnits } from '../../engine/content';
 import { db } from '../../engine/db';
-import { Empty, Kicker, Page, Rule, TopBar } from '../../ui/kit';
+import { Empty, Loading, Page, Row, Section, TopBar, two } from '../../ui/kit';
 import { accentFor } from '../library/bookUnits';
 import { Ladder } from '../library/UnitCover';
 import { STEPS } from './steps';
@@ -11,39 +11,32 @@ export default function StudioHome() {
   const units = useUnits();
   const ladders = useLiveQuery(() => db.ladder.toArray(), []);
   const takes = useLiveQuery(() => db.recordings.where('kind').equals('sentence').count(), []);
-  if (!units) return null;
+  if (!units) return <Loading />;
   return (
     <>
-      <TopBar kicker="Nói · nhại theo" title="Shadowing Studio" right={<Link className="chip" to="/then-now">Trước / Nay</Link>} />
+      <TopBar kicker="Studio" title="Shadowing" right={<Link className="t-label -mr-2 flex h-11 items-center px-2 !text-ink" to="/then-now">Avant · Après</Link>} />
       <Page>
-        <h1 className="display vi mt-6 text-[48px]">Nghe. Nhại.<br /><i className="text-[var(--accent)]">Lặp lại.</i></h1>
-        <p className="mt-3 max-w-[40ch] text-[14px] leading-relaxed text-muted">
-          Mỗi đoạn hội thoại có 7 bậc, mở lần lượt: nghe mù → nghe có chữ → nhại từng câu → lẩm nhẩm theo → nhại đầy đủ có chữ → không chữ → ghi một lượt hoàn chỉnh.
+        <h1 className="t-hero mt-10">Écouter,<br /><span className="italic">répéter.</span></h1>
+        <p className="t-body measure mt-6 text-ink2">
+          Mỗi đoạn có bảy bậc, mở lần lượt: nghe không chữ, nghe có chữ, nhại từng câu, lẩm nhẩm theo, nhại có chữ, nhại không chữ, và ghi một lượt hoàn chỉnh.
         </p>
-        <div className="mt-4 flex gap-4 text-[13px] text-muted"><span>{takes ?? 0} bản ghi câu</span></div>
-        {units.length === 0 && <Empty title="Chưa có bài." body="Nhập gói nội dung để bắt đầu shadowing." to="/import" cta="Nhập gói" />}
+        <p className="t-label mt-4">{takes ?? 0} bản ghi câu</p>
+        {units.length === 0 && <Empty kicker="Studio trống" title="Rien à écouter encore." body="Nhập gói nội dung để bắt đầu shadowing với audio của sách." to="/import" cta="Nhập gói" />}
         {units.map((u) => {
           const accent = accentFor(u.number);
           const docs = u.docs.filter((d) => d.shadowing && d.trackId);
           return (
-            <section key={u.id} className="mt-8">
-              <div className="flex items-baseline justify-between">
-                <h2 className="display text-3xl" style={{ color: accent }}>Unité {u.number} · {u.title}</h2>
-              </div>
-              <Rule className="mt-1" />
+            <Section key={u.id} n={two(u.number)} title={<span className="serif normal-case tracking-normal text-[22px] italic text-ink">{u.title}</span>} meta={`${docs.length} bài`}>
               {docs.map((d) => {
                 const step = ladders?.find((l) => l.docId === `${u.id}:${d.id}`)?.unlocked ?? 0;
                 return (
-                  <Link key={d.id} to={`/studio/${u.id}/${d.id}`} className="flex items-center gap-3 border-b hairline py-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-[15px] font-medium">{d.title}</div>
-                      <Kicker>p. {d.printedPage} · {step >= 7 ? 'hoàn thành' : STEPS[step].short}</Kicker>
-                    </div>
+                  <Row key={d.id} to={`/studio/${u.id}/${d.id}`} title={<span className="serif text-[18px]">{d.title}</span>}
+                    sub={<span className="t-meta">p. {d.printedPage} · {step >= 7 ? 'hoàn thành' : STEPS[step].short.toLowerCase()}</span>}>
                     <Ladder step={step} accent={accent} />
-                  </Link>
+                  </Row>
                 );
               })}
-            </section>
+            </Section>
           );
         })}
       </Page>

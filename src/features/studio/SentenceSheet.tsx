@@ -8,7 +8,8 @@ import { Recorder } from '../../engine/recorder';
 import { rateSentence, previewIntervals, Rating } from '../../engine/srs';
 import { recognitionAvailable, recognizeOnce, wordsHeard } from '../../engine/speech';
 import type { Segment } from '../../engine/types';
-import { Kicker, Sheet } from '../../ui/kit';
+import { ErrorNote, Kicker, Sheet } from '../../ui/kit';
+import { Icon } from '../../ui/icons';
 import { LevelMeter, PitchOverlay, Waveforms } from '../../ui/viz';
 import { useMic } from '../shared/useMic';
 
@@ -118,66 +119,70 @@ export default function SentenceSheet({ open, onClose, trackId, unitId, seg, pla
   const intervals = card ? previewIntervals(card) : null;
 
   return (
-    <Sheet open={open} onClose={() => { if (recording) stopRec(); onClose(); }} title={seg.speaker ? `${seg.speaker}` : `Câu ${seg.idx + 1}`}>
+    <Sheet open={open} onClose={() => { if (recording) stopRec(); onClose(); }} title={seg.speaker ? seg.speaker : `Câu ${seg.idx + 1}`}>
       {mic.sheet}
-      <p className="serif text-[26px] leading-tight">{seg.text}</p>
-      {seg.vi && <p className="mt-1 text-[14px] text-muted">{seg.vi}</p>}
+      <p className="t-fr !text-[27px] !leading-[1.22]">{seg.text}</p>
+      {seg.vi && <p className="t-small mt-2 text-ink2">{seg.vi}</p>}
 
-      <div className="mt-4">
-        <div className="flex items-center justify-between"><Kicker>Dạng sóng</Kicker><Kicker><span className="text-ink">▲ gốc</span> · <span className="text-[var(--tomato)]">▼ bạn</span></Kicker></div>
-        <Waveforms native={native?.samples} mine={mine?.samples} />
+      <div className="mt-8">
+        <div className="flex items-baseline justify-between"><Kicker>Dạng sóng</Kicker><span className="t-label"><span className="!text-accent" style={{ color: 'var(--accent)' }}>gốc</span> · <span style={{ color: 'var(--ink)' }}>bạn</span></span></div>
+        <div className="mt-3"><Waveforms native={native?.samples} mine={mine?.samples} /></div>
       </div>
-      <div className="mt-3">
-        <div className="flex items-center justify-between"><Kicker>Ngữ điệu</Kicker><Kicker><span className="text-[var(--cobalt)]">— gốc</span> · <span className="text-[var(--tomato)]">- - bạn</span></Kicker></div>
-        <PitchOverlay native={native?.contour} mine={mine?.aligned} />
-        {mine && <p className="mt-2 text-[14px] leading-snug">{mine.report.verdictVi}{!Number.isNaN(mine.report.meanDiff) && <span className="text-muted"> (lệch trung bình {mine.report.meanDiff.toFixed(1)} nửa cung)</span>}</p>}
-        {!mine && <p className="mt-2 text-[13px] text-muted">Ghi âm để thấy đường ngữ điệu của bạn chồng lên bản gốc. Tiếng Pháp không có thanh điệu: đường của bạn nên phẳng trên từng âm tiết, chỉ đổi ở cuối nhóm nhịp.</p>}
+      <div className="mt-6">
+        <div className="flex items-baseline justify-between"><Kicker>Ngữ điệu</Kicker><span className="t-label"><span style={{ color: 'var(--accent)' }}>gốc</span> · <span style={{ color: 'var(--ink)' }}>bạn</span></span></div>
+        <div className="mt-3"><PitchOverlay native={native?.contour} mine={mine?.aligned} /></div>
+        {mine && <p className="t-small measure mt-3 text-ink">{mine.report.verdictVi}{!Number.isNaN(mine.report.meanDiff) && <span className="text-muted"> Lệch trung bình {mine.report.meanDiff.toFixed(1)} nửa cung.</span>}</p>}
+        {!mine && <p className="t-small measure mt-3 text-ink2">Ghi âm để thấy đường ngữ điệu của bạn chồng lên bản gốc. Tiếng Pháp không có thanh điệu: đường của bạn nên phẳng trên từng âm tiết, chỉ đổi ở cuối nhóm nhịp.</p>}
       </div>
 
-      {recording && <div className="mt-3"><LevelMeter active={recording} getLevel={() => recorder.current.level} /></div>}
-      {busy && <p className="mt-2 animate-pulse text-[14px]">{busy}</p>}
-      {mic.error && <p className="mt-2 text-[14px] text-[var(--tomato)]">{mic.error}</p>}
+      {recording && <div className="mt-4"><LevelMeter active={recording} getLevel={() => recorder.current.level} /></div>}
+      {busy && <p className="t-label breathe mt-4">{busy}</p>}
+      {mic.error && <ErrorNote>{mic.error}</ErrorNote>}
 
-      <div className="mt-4 grid grid-cols-3 gap-2">
-        <button className="btn btn-ghost" onClick={playNative}>▶ Gốc</button>
-        <button className={`btn ${recording ? 'btn-accent' : 'btn-ink'}`} onClick={recording ? stopRec : startRec}>{recording ? '◼ Dừng' : '● Ghi'}</button>
-        <button className="btn btn-ghost" disabled={!mine} onClick={ab}>A / B</button>
+      <div className="mt-8 grid grid-cols-3 border-y border-[var(--rule)]">
+        <button className="flex min-h-[64px] flex-col items-center justify-center gap-1.5 text-ink" onClick={playNative}>
+          <Icon name="play" size={16} /><span className="t-label !text-ink">Gốc</span>
+        </button>
+        <button className="flex min-h-[64px] flex-col items-center justify-center gap-1.5 border-x border-[var(--rule)] transition-colors duration-300"
+          style={{ color: 'var(--accent)', background: recording ? 'var(--accent-soft)' : 'transparent' }} onClick={recording ? stopRec : startRec}>
+          <Icon name={recording ? 'stop' : 'record'} size={recording ? 13 : 15} /><span className="t-label" style={{ color: 'var(--accent)' }}>{recording ? 'Dừng' : 'Ghi'}</span>
+        </button>
+        <button className="flex min-h-[64px] flex-col items-center justify-center gap-1.5 text-ink disabled:opacity-35" disabled={!mine} onClick={ab}>
+          <Icon name="ab" size={18} /><span className="t-label !text-ink">A / B</span>
+        </button>
       </div>
-      {mine && <button className="btn btn-ghost mt-2 w-full" onClick={() => playBlob(mine.blob)}>▶ Nghe giọng tôi</button>}
-
-      {recognitionAvailable() && (
-        <div className="mt-4">
-          <button className="chip" onClick={check}>Kiểm tra bằng nhận dạng giọng nói</button>
-          {heard !== null && (
-            <p className="serif mt-2 text-[20px] leading-snug">
-              {heard === '' ? <span className="text-[15px] text-muted">Không nghe thấy gì.</span> :
-                wordsHeard(seg.text, heard).map((w, i) => w.space ? w.tok : <span key={i} className={w.ok ? '' : 'text-[var(--tomato)] underline decoration-2'}>{w.tok}</span>)}
-            </p>
-          )}
-        </div>
+      <div className="flex flex-wrap gap-x-6">
+        {mine && <button className="btn btn-text !px-0" onClick={() => playBlob(mine.blob)}><Icon name="speaker" size={16} />Nghe giọng tôi</button>}
+        {recognitionAvailable() && <button className="btn btn-text !px-0" onClick={check}><Icon name="ear" size={16} />Nhận dạng giọng nói</button>}
+      </div>
+      {heard !== null && (
+        <p className="t-fr mt-2">
+          {heard === '' ? <span className="t-small text-muted">Không nghe thấy gì.</span> :
+            wordsHeard(seg.text, heard).map((w, i) => w.space ? w.tok : <span key={i} className={w.ok ? '' : 'text-accent underline decoration-[0.5px] underline-offset-4'}>{w.tok}</span>)}
+        </p>
       )}
 
-      <div className="mt-6">
+      <div className="mt-8">
         <Kicker>Câu này khó với bạn thế nào?</Kicker>
-        <div className="mt-2 grid grid-cols-4 gap-2">
-          {[[Rating.Again, 'Lại'], [Rating.Hard, 'Khó'], [Rating.Good, 'Được'], [Rating.Easy, 'Dễ']].map(([g, l]) => (
-            <button key={g} className="btn btn-ghost flex-col !gap-0 px-1 py-1" disabled={rated} onClick={() => rate(g as number)}>
-              <span>{l}</span>{intervals && <span className="text-[11px] text-muted">{intervals[g as number]}</span>}
+        <div className="mt-3 grid grid-cols-4 border-y border-[var(--rule)]">
+          {[[Rating.Again, 'Lại'], [Rating.Hard, 'Khó'], [Rating.Good, 'Được'], [Rating.Easy, 'Dễ']].map(([g, l], i) => (
+            <button key={g} className={`flex min-h-[64px] flex-col items-center justify-center disabled:opacity-35 ${i ? 'border-l border-[var(--rule)]' : ''}`} disabled={rated} onClick={() => rate(g as number)}>
+              <span className="text-[14px] text-ink">{l}</span>{intervals && <span className="t-num mt-0.5 text-[14px] text-muted">{intervals[g as number]}</span>}
             </button>
           ))}
         </div>
-        {rated && <p className="mt-2 text-[13px] text-muted">Đã lưu. Câu khó sẽ quay lại sớm hơn trong phần ôn tập.</p>}
+        {rated && <p className="t-small mt-3 text-ink2">Đã lưu. Câu khó sẽ quay lại sớm hơn trong phần ôn tập.</p>}
       </div>
 
-      <div className="mt-6 flex items-center justify-between border-t hairline pt-3 text-[13px]">
-        <span className="text-muted">{recs?.length ?? 0} bản ghi{recs?.length ? ` · lần đầu ${recs[0].createdAt.toLocaleDateString('vi-VN')}` : ''}</span>
-        <div className="flex gap-3">
-          {(recs?.length ?? 0) >= 2 && <Link className="underline" to={`/then-now?seg=${encodeURIComponent(segKey)}`}>Trước / Nay</Link>}
-          <button className="underline" onClick={() => setEditing(!editing)}>Chỉnh mốc</button>
+      <div className="mt-8 flex items-center justify-between">
+        <span className="t-meta">{recs?.length ?? 0} bản ghi{recs?.length ? ` · lần đầu ${recs[0].createdAt.toLocaleDateString('vi-VN')}` : ''}</span>
+        <div className="flex gap-4">
+          {(recs?.length ?? 0) >= 2 && <Link className="t-label flex min-h-[44px] items-center !text-ink" to={`/then-now?seg=${encodeURIComponent(segKey)}`}>Avant · Après</Link>}
+          <button className="t-label flex min-h-[44px] items-center !text-ink" onClick={() => setEditing(!editing)}>Chỉnh mốc</button>
         </div>
       </div>
       {editing && <BoundaryEditor trackId={trackId} seg={seg} player={player} onSaved={() => setEditing(false)} />}
-      <div className="h-4" />
+      <div className="h-6" />
     </Sheet>
   );
 }
@@ -190,23 +195,26 @@ function BoundaryEditor({ trackId, seg, player, onSaved }: { trackId: string; se
   const fmt = (t: number) => `${Math.floor(t / 60)}:${(t % 60).toFixed(2).padStart(5, '0')}`;
   const nudges = useMemo(() => [-0.05, -0.01, 0.01, 0.05], []);
   const row = (label: string, v: number, set: (x: number) => void) => (
-    <div className="flex items-center gap-2 py-1">
-      <span className="w-14 text-[13px] text-muted">{label}</span>
-      <span className="w-20 font-mono text-[14px] tabular-nums">{fmt(v)}</span>
-      {nudges.map((d) => <button key={d} className="chip flex-1 px-1" onClick={() => set(Math.max(0, +(v + d).toFixed(3)))}>{d > 0 ? '+' : '−'}{Math.abs(d * 1000)}</button>)}
+    <div className="flex items-center gap-2 border-b border-[var(--rule)] py-1">
+      <span className="t-label w-20">{label}</span>
+      <span className="t-num w-20 text-[18px] tabular-nums">{fmt(v)}</span>
+      {nudges.map((d) => <button key={d} className="opt flex-1 text-[13px] !text-ink2" onClick={() => set(Math.max(0, +(v + d).toFixed(3)))}>{d > 0 ? '+' : '−'}{Math.abs(d * 1000)}</button>)}
     </div>
   );
   return (
-    <div className="mt-3 border hairline p-3">
-      <Kicker>Chỉnh mốc câu (ms)</Kicker>
-      {row('Bắt đầu', start, setStart)}
-      {row('Kết thúc', end, setEnd)}
-      <div className="mt-2 grid grid-cols-3 gap-2">
-        <button className="btn btn-ghost" onClick={async () => { await player.load(trackId); await player.playRange(start, end); }}>▶ Thử</button>
-        <button className="btn btn-ink" onClick={async () => { await db.overrides.put({ key, trackId, idx: seg.idx, start, end, updatedAt: new Date() }); onSaved(); }}>Lưu</button>
-        <button className="btn btn-ghost" disabled={!hasOverride} onClick={async () => { await db.overrides.delete(key); onSaved(); }}>Gốc</button>
+    <div className="mt-4">
+      <div className="gold-rule" />
+      <Kicker className="mt-4">Chỉnh mốc câu · mili giây</Kicker>
+      <div className="mt-2">
+        {row('Bắt đầu', start, setStart)}
+        {row('Kết thúc', end, setEnd)}
       </div>
-      <p className="mt-2 text-[12px] text-muted">Các chỉnh sửa có thể xuất ra trong Cài đặt để cập nhật pipeline trên laptop.</p>
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        <button className="btn btn-line" onClick={async () => { await player.load(trackId); await player.playRange(start, end); }}>Thử</button>
+        <button className="btn btn-primary" onClick={async () => { await db.overrides.put({ key, trackId, idx: seg.idx, start, end, updatedAt: new Date() }); onSaved(); }}>Lưu</button>
+        <button className="btn btn-line" disabled={!hasOverride} onClick={async () => { await db.overrides.delete(key); onSaved(); }}>Gốc</button>
+      </div>
+      <p className="t-meta mt-3">Các chỉnh sửa có thể xuất ra trong Cài đặt để cập nhật pipeline trên laptop.</p>
     </div>
   );
 }

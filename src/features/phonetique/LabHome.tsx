@@ -3,50 +3,48 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { LAB } from '../../content/frLab';
 import { useUnits } from '../../engine/content';
 import { db } from '../../engine/db';
-import { Kicker, Page, Rule, TopBar } from '../../ui/kit';
-import { accentFor } from '../library/bookUnits';
+import { Kicker, Page, ROMAN, Row, Section, TopBar, two, WithIpa } from '../../ui/kit';
+import { Icon } from '../../ui/icons';
 
 export default function LabHome() {
   const units = useUnits();
   const errors = useLiveQuery(() => db.errorLog.where('source').equals('phon').filter((e) => !e.resolved).count(), []);
   return (
     <>
-      <TopBar kicker="Ngữ âm" title="Phonétique Lab" />
+      <TopBar kicker="Phonétique" title="Laboratoire" />
       <Page>
-        <h1 className="display vi mt-6 text-[48px]">Đúng âm,<br /><i className="text-[var(--cobalt)]">trước khi nhanh.</i></h1>
-        <p className="mt-3 max-w-[40ch] text-[14px] leading-relaxed text-muted">Các bài viết riêng cho người Việt: vị trí lưỡi, môi, hàm — chỗ nào tiếng Việt giúp được, chỗ nào đánh lừa bạn. Mỗi bài có phần nghe phân biệt và phần nói.</p>
-        {!!errors && <p className="mt-3 text-[13px]"><span className="text-[var(--tomato)]">●</span> {errors} cặp âm bạn hay nhầm sẽ xuất hiện lại trong bài nghe.</p>}
+        <h1 className="t-hero mt-10">La justesse<br /><span className="italic">avant la vitesse.</span></h1>
+        <p className="t-body measure mt-6 text-ink2">Các bài viết riêng cho người Việt: vị trí lưỡi, môi, hàm — chỗ nào tiếng Việt giúp được, chỗ nào đánh lừa bạn. Mỗi bài có phần nghe phân biệt và phần nói.</p>
+        {!!errors && <p className="t-small mt-4 flex items-center gap-2 text-ink"><span className="h-px w-4 bg-[var(--accent)]" />{errors} cặp âm bạn hay nhầm sẽ xuất hiện lại trong bài nghe.</p>}
 
-        <Link to="/lab/spell" className="mt-6 flex items-center justify-between border-2 p-4" style={{ borderColor: 'var(--ink)' }}>
-          <div><Kicker>Đánh vần · épeler</Kicker><div className="display mt-1 text-3xl">G ≠ J · E ≠ I</div><div className="text-[13px] text-muted">Nghe chữ cái, gõ lại — có tên dấu é è ê ç</div></div>
-          <span className="text-2xl">→</span>
+        <Link to="/lab/spell" className="mt-10 block">
+          <div className="gold-rule" />
+          <div className="flex items-center gap-4 py-6">
+            <div className="flex-1">
+              <Kicker>Épeler · đánh vần</Kicker>
+              <div className="t-display mt-2">G ≠ J <span className="text-faint">·</span> E ≠ I</div>
+              <div className="t-small mt-2 text-ink2">Nghe chữ cái, gõ lại — có tên dấu é è ê ç</div>
+            </div>
+            <Icon name="arrow" size={20} className="text-muted" />
+          </div>
+          <div className="gold-rule" />
         </Link>
 
-        <section className="mt-8">
-          <h2 className="display vi text-3xl">Bài trọng tâm</h2>
-          <Rule className="mt-1" />
+        <Section n="01" title="Leçons essentielles" meta={`${LAB.length} bài`}>
           {LAB.map((l, i) => (
-            <Link key={l.id} to={`/lab/lesson/core:${l.id}`} className="flex items-center gap-3 border-b hairline py-3">
-              <span className="serif w-8 text-2xl text-[var(--accent)]">{i + 1}</span>
-              <div className="min-w-0 flex-1">
-                <div className="text-[15px] font-medium">{l.title}</div>
-                <div className="truncate text-[12px] text-muted">{l.oneLiner}</div>
-              </div>
-              {l.ipa.length > 0 && <span className="ipa text-[13px] text-muted">/{l.ipa.join('/ /')}/</span>}
-            </Link>
+            <Row key={l.id} to={`/lab/lesson/core:${l.id}`} n={two(i + 1)}
+              title={<WithIpa text={l.title} />}
+              sub={<span className="t-meta block truncate">{l.oneLiner}</span>}
+              meta={l.ipa.length > 0 ? <span className="ipa !text-[12px]">/{l.ipa.join('/ /')}/</span> : undefined} />
           ))}
-        </section>
+        </Section>
 
         {units?.map((u) => (
-          <section key={u.id} className="mt-8">
-            <h2 className="display text-3xl" style={{ color: accentFor(u.number) }}>Phonétique · Unité {u.number}</h2>
-            <Rule className="mt-1" />
-            {u.phonetics.map((p) => (
-              <Link key={p.id} to={`/lab/lesson/${u.id}:${p.id}`} className="flex items-center justify-between border-b hairline py-3">
-                <span className="text-[15px] font-medium">{p.title}</span><span className="text-[12px] text-muted">p. {p.printedPage} →</span>
-              </Link>
+          <Section key={u.id} n={two(u.number)} title={<>Phonétique · <span className="serif normal-case tracking-normal text-[17px] italic text-ink">{u.title}</span></>}>
+            {u.phonetics.map((p, i) => (
+              <Row key={p.id} to={`/lab/lesson/${u.id}:${p.id}`} n={ROMAN[i]} title={<span className="serif text-[18px]">{p.title}</span>} meta={p.printedPage} />
             ))}
-          </section>
+          </Section>
         ))}
       </Page>
     </>

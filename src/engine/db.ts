@@ -76,7 +76,7 @@ class StudyDB extends Dexie {
 }
 
 export const db = new StudyDB();
-if (import.meta.env.DEV) (window as any).__db = db; // dev-only handle for testing
+if (import.meta.env.DEV && typeof window !== 'undefined') (window as any).__db = db; // dev-only handle for testing
 
 export async function getSetting<T>(key: string, fallback: T): Promise<T> {
   const row = await db.settings.get(key);

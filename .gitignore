@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.claude/
+*.local
+*.zip
+*.mp3
+*.m4a

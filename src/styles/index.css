@@ -1,0 +1,115 @@
+@import '@fontsource/instrument-serif/400.css';
+@import '@fontsource/instrument-serif/400-italic.css';
+@import '@fontsource/inter-tight/400.css';
+@import '@fontsource/inter-tight/500.css';
+@import '@fontsource/inter-tight/600.css';
+@import '@fontsource/fraunces/400.css';
+@import '@fontsource/fraunces/400-italic.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------- Édition tokens: paper (light) ---------- */
+:root {
+  --paper: #F3EEE4;
+  --paper-2: #EAE3D5;
+  --paper-3: #E0D7C6;
+  --ink: #1B1A2E;
+  --ink-soft: #3A3850;
+  --muted: #6E6878;
+  --rule: rgba(27, 26, 46, 0.16);
+  --tomato: #E8452C;
+  --cobalt: #2340B8;
+  --masc: #2340B8;
+  --fem: #E8452C;
+  --mf: #6B4FA0;
+  --ok: #2E7D4F;
+  --accent: var(--tomato);
+  --grain-opacity: 0.07;
+  --grain-blend: multiply;
+  --shadow: 0 1px 0 rgba(27, 26, 46, 0.08);
+  color-scheme: light;
+}
+
+/* ---------- Night editorial (designed, not inverted) ---------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --paper: #15141D; --paper-2: #1E1C29; --paper-3: #2A2737;
+    --ink: #EFE7D8; --ink-soft: #CFC6B5; --muted: #9C94A8; --rule: rgba(239, 231, 216, 0.14);
+    --tomato: #FF6B4E; --cobalt: #7D95FF; --masc: #8EA3FF; --fem: #FF7A60; --mf: #B79BEA; --ok: #5CC28A;
+    --grain-opacity: 0.09; --grain-blend: screen; color-scheme: dark;
+  }
+}
+:root[data-theme='dark'] {
+  --paper: #15141D; --paper-2: #1E1C29; --paper-3: #2A2737;
+  --ink: #EFE7D8; --ink-soft: #CFC6B5; --muted: #9C94A8; --rule: rgba(239, 231, 216, 0.14);
+  --tomato: #FF6B4E; --cobalt: #7D95FF; --masc: #8EA3FF; --fem: #FF7A60; --mf: #B79BEA; --ok: #5CC28A;
+  --grain-opacity: 0.09; --grain-blend: screen; color-scheme: dark;
+}
+
+html, body, #root { height: 100%; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter Tight', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+/* Risograph paper grain: an SVG noise tile over everything, ignoring pointer events */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: var(--grain-blend);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.1 0 0 0 0 0.15 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@layer components {
+  .kicker { @apply text-[11px] font-medium uppercase tracking-kicker text-muted; }
+  .display { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; letter-spacing: -0.01em; line-height: 0.95; }
+  .serif { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; }
+  /* Instrument Serif has no Vietnamese diacritics: Vietnamese headlines use Fraunces. */
+  .display.vi, .serif.vi { font-family: 'Fraunces', Georgia, serif; letter-spacing: -0.025em; font-variation-settings: 'SOFT' 50, 'WONK' 1; }
+  .display.vi { line-height: 1.02; }
+  .hairline { border-color: var(--rule); }
+  .btn {
+    @apply inline-flex min-h-[44px] select-none items-center justify-center gap-2 rounded-none border px-4 text-[15px] font-medium transition-[transform,background-color,color] duration-150 active:scale-[0.97];
+    border-color: var(--ink);
+  }
+  .btn-ink { background: var(--ink); color: var(--paper); }
+  .btn-accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-ghost { border-color: var(--rule); }
+  .chip {
+    @apply inline-flex min-h-[36px] items-center justify-center border px-3 text-[13px] font-medium tabular-nums transition-colors;
+    border-color: var(--rule);
+  }
+  .chip[aria-pressed='true'] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .card { background: var(--paper-2); }
+  .ipa { font-family: 'Inter Tight', system-ui, sans-serif; font-feature-settings: 'tnum'; letter-spacing: 0.01em; }
+  .g-m { color: var(--masc); }
+  .g-f { color: var(--fem); }
+  .g-mf { color: var(--mf); }
+  .safe-bottom { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .safe-top { padding-top: max(12px, env(safe-area-inset-top)); }
+  .scroll-area { -webkit-overflow-scrolling: touch; }
+}
+
+/* Highlight that sweeps across the active sentence while it plays */
+.sweep {
+  background-image: linear-gradient(var(--sweep-color, var(--accent)), var(--sweep-color, var(--accent)));
+  background-repeat: no-repeat;
+  background-size: var(--p, 0%) 100%;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  color: inherit;
+}
+.sweep-on { color: #fff; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}

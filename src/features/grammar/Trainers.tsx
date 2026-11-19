@@ -176,7 +176,7 @@ export function ErrorLog() {
   const due = queue;
   if (!open) return <Loading />;
   const e = due[i];
-  const label: Record<string, string> = { grammar: 'Ngữ pháp', exercise: 'Bài tập', listening: 'Nghe', vocab: 'Từ vựng', gender: 'Giống', phon: 'Ngữ âm', spell: 'Đánh vần' };
+  const label: Record<string, string> = { grammar: 'Ngữ pháp', exercise: 'Bài tập', listening: 'Nghe', vocab: 'Từ vựng', gender: 'Giống', phon: 'Ngữ âm', spell: 'Đánh vần', writing: 'Viết' };
 
   if (mode === 'review' && e) {
     const check = async () => {

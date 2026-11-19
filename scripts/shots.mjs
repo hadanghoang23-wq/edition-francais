@@ -47,6 +47,19 @@ async function ensureData(page) {
   });
 }
 
+const SAMPLE = "bonjour! Je appelle Ha. je suis 25 ans. Je suis vietnamien et je habite a Hanoi. J'aime le cinema.";
+const MOCK_FB = { corrected: "Bonjour ! Je m'appelle Ha. J'ai 25 ans. Je suis vietnamienne et j'habite à Hanoï. J'aime le cinéma.", issues: [
+  { original: 'Je appelle', correction: "Je m'appelle", kind: 'grammar', explanation_vi: "s'appeler là động từ phản thân (verbe pronominal): cần « me », trước nguyên âm thành « m' »." },
+  { original: 'je suis 25 ans', correction: "J'ai 25 ans", kind: 'grammar', explanation_vi: 'Nói tuổi dùng avoir (« có »), không dùng être.' },
+  { original: 'vietnamien', correction: 'vietnamienne', kind: 'agreement', explanation_vi: 'Người viết là nữ nên tính từ quốc tịch ở giống cái (accord): -ien → -ienne.' },
+  { original: 'a Hanoi', correction: 'à Hanoï', kind: 'accent', explanation_vi: '« à » (giới từ) có dấu huyền; « a » là động từ avoir. Tên riêng: Hanoï.' },
+  { original: 'cinema', correction: 'cinéma', kind: 'accent', explanation_vi: 'Thiếu dấu sắc (accent aigu).' } ],
+  strengths_vi: ['Đủ các ý: chào, tên, tuổi, quốc tịch, nơi ở, sở thích.', 'Câu ngắn, rõ ràng, đúng trình độ A1.'],
+  overall_vi: 'Bài đúng đề và dễ hiểu. Hai điểm cần nhớ: động từ phản thân s\'appeler và hợp giống của tính từ quốc tịch.',
+  task_fit_vi: 'Đủ nội dung của phiếu, độ dài hợp lý.', next_step_vi: 'Ôn bảng chia s\'appeler và bài « Il est… / Elle est… ».',
+  better_version: "Bonjour ! Je m'appelle Ha, j'ai 25 ans. Je suis vietnamienne et j'habite à Hanoï. J'aime le cinéma et la musique." };
+const MOCK_REPLY = { id: 'msg_mock', type: 'message', role: 'assistant', model: 'claude-opus-5-5', content: [{ type: 'text', text: JSON.stringify(MOCK_FB) }], stop_reason: 'end_turn', stop_sequence: null, usage: { input_tokens: 1400, output_tokens: 950 } };
+
 const SCREENS = [
   ['01-today', '/'],
   ['02-library', '/library'],
@@ -94,6 +107,31 @@ const SCREENS = [
   }],
   ['30-articles', '/practice/articles', async (p) => { await p.locator('main button').first().click(); await p.waitForTimeout(500); }],
   ['31-error-log', '/practice/errors'],
+  // Phase 3 (AI replies are mocked here: no real API call, no key needed)
+  ['33-today-week', '/', async (p) => { await p.getByText(/Cette semaine/iu).first().scrollIntoViewIfNeeded(); await p.mouse.wheel(0, 200); await p.waitForTimeout(500); }],
+  ['33-write-home', '/write'],
+  ['34-write-selfcheck', '/write/u01/u01-k2', async (p) => {
+    await p.getByLabel('Bài viết').fill(SAMPLE);
+    await p.getByRole('button', { name: /Tự kiểm tra/iu }).click(); await p.waitForTimeout(800);
+    await p.getByText(/Tự kiểm tra/iu).last().scrollIntoViewIfNeeded();
+  }],
+  ['35-write-feedback', '/write/u01/u01-k2', async (p) => {
+    await p.evaluate(() => window.__db.settings.put({ key: 'apiKey', value: 'sk-ant-mock' }));
+    await p.route('https://api.anthropic.com/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MOCK_REPLY) }));
+    await p.reload(); await settle(p);
+    await p.getByLabel('Bài viết').fill(SAMPLE);
+    await p.getByRole('button', { name: /Chữa bằng AI/iu }).click();
+    await p.getByText(/Bản đã chữa/iu).first().waitFor({ timeout: 15000 });
+    await p.getByText(/Bản đã chữa/iu).first().scrollIntoViewIfNeeded(); await p.waitForTimeout(600);
+    await p.unroute('https://api.anthropic.com/**');
+  }],
+  ['36-write-issues', '/write/u01/u01-k2', async (p) => {
+    await p.getByText(/Từng lỗi/iu).first().scrollIntoViewIfNeeded(); await p.waitForTimeout(600);
+  }],
+  ['37-settings-ai', '/settings', async (p) => {
+    await p.getByText(/Chữa bài bằng AI/iu).first().scrollIntoViewIfNeeded(); await p.waitForTimeout(500);
+    await p.evaluate(() => window.__db.settings.delete('apiKey'));
+  }],
   ['32-grammar-drills', '/unit/u01/grammar/u01-g1', async (p) => {
     await p.getByText('Exercices', { exact: false }).last().scrollIntoViewIfNeeded(); await p.waitForTimeout(500);
   }],

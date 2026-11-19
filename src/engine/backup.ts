@@ -5,7 +5,7 @@ import { db } from './db';
  * Backup = all progress + recordings (not the content packs, which you can re-import).
  * Format: zip with progress.json and recordings/<id>.<ext>.
  */
-const PROGRESS_TABLES = ['overrides', 'cards', 'reviewLogs', 'ladder', 'stats', 'settings', 'customCards', 'errorLog'] as const;
+const PROGRESS_TABLES = ['overrides', 'cards', 'reviewLogs', 'ladder', 'stats', 'settings', 'customCards', 'errorLog', 'exerciseResults', 'drafts'] as const;
 
 const reviveDates = (o: any): any => {
   if (Array.isArray(o)) return o.map(reviveDates);

@@ -25,10 +25,11 @@ export default function Today() {
     const now = new Date();
     const dueErr = await db.errorLog.filter((e) => !e.resolved && e.source !== 'phon' && e.source !== 'spell' && (!e.dueAt || e.dueAt <= now)).count();
     const results = await db.exerciseResults.toArray();
-    return { units, ladders, stats, minutes, q, ret, learned, phonErrors, dueErr, results };
+    const drafts = await db.drafts.toArray();
+    return { units, ladders, stats, minutes, q, ret, learned, phonErrors, dueErr, results, drafts };
   }, []);
   if (!data) return <Loading />;
-  const { units, ladders, stats, minutes, q, ret, learned, phonErrors, dueErr, results } = data;
+  const { units, ladders, stats, minutes, q, ret, learned, phonErrors, dueErr, results, drafts } = data;
   const best = new Map(results.map((r) => [r.id, r.best]));
   // Share of a unit's book exercises (of these skills) done, weighted by best score.
   const skillScore = (u: (typeof units)[number], skills: string[], extra: string[] = []) => {
@@ -59,17 +60,28 @@ export default function Today() {
   const lesson = phonErrors.length ? LAB.find((l) => l.pairs.some((p) => phonErrors.some((e) => e.prompt === `${p.a}|${p.b}`))) ?? LAB[0] : LAB[dayIndex() % LAB.length];
   const grammar = cur ? cur.u.grammar[dayIndex() % Math.max(1, cur.u.grammar.length)] : undefined;
 
+  // One writing task of the current unit that has not been checked yet, every other day.
+  const checked = new Set(drafts.filter((x) => x.versions.length > 0).map((x) => x.id));
+  const writeTask = cur && dayIndex() % 2 === 0 ? cur.u.tasks.find((t) => t.kind === 'writing' && !checked.has(`${cur.u.id}:${t.id}`)) : undefined;
+
   const reviewMin = Math.max(5, Math.round((q.due.length + q.fresh.length) * 0.3));
   const plan = [
     { label: 'Ôn thẻ từ', fr: null, sub: `${q.due.length} đến hạn · ${q.fresh.length} mới`, min: reviewMin, to: '/cards/review', done: q.queue.length === 0 },
     cur && nextDoc ? { label: 'Shadowing', fr: nextDoc.title, sub: `bậc ${nextStep} / 7 · ${STEPS[nextStep - 1].short.toLowerCase()}`, min: Math.round(minutes * 0.4), to: `/studio/${cur.u.id}/${nextDoc.id}`, done: false } : null,
     { label: 'Phonétique', fr: null, sub: lesson.title, min: 10, to: `/lab/lesson/core:${lesson.id}`, done: false },
+    writeTask ? { label: 'Viết', fr: writeTask.promptFr, sub: null, min: 15, to: `/write/${cur!.u.id}/${writeTask.id}`, done: false } : null,
     dueErr ? { label: 'Sổ lỗi', fr: null, sub: `${dueErr} lỗi đến hạn ôn`, min: Math.max(3, Math.round(dueErr * 0.5)), to: '/practice/errors', done: false } : null,
     cur && grammar ? { label: 'Bài mới · ngữ pháp', fr: grammar.title, sub: null, min: Math.max(10, minutes - reviewMin - Math.round(minutes * 0.4) - 10), to: `/unit/${cur.u.id}/grammar/${grammar.id}`, done: false } : null,
   ].filter(Boolean) as { label: string; fr: string | null; sub: string | null; min: number; to: string; done: boolean }[];
 
   // Streak: consecutive active days ending today (or yesterday if today has nothing yet).
-  const active = new Set(stats.filter((s) => s.reviews + s.sentences + s.shadowMs > 0).map((s) => s.date));
+  const active = new Set(stats.filter((s) => s.reviews + s.sentences + s.shadowMs + (s.items ?? 0) + (s.writing ?? 0) > 0).map((s) => s.date));
+  // Rough minutes per day for the week strip.
+  const minutesOf = (s?: (typeof stats)[number]) => (s ? s.shadowMs / 60000 + s.reviews * 0.2 + (s.items ?? 0) * 0.5 + (s.writing ?? 0) * 6 : 0);
+  const week = Array.from({ length: 7 }, (_, k) => { const day = new Date(); day.setDate(day.getDate() - (6 - k)); const key = todayKey(day); return { key, letter: 'DLMMJVS'[day.getDay()], min: minutesOf(stats.find((s) => s.date === key)), today: k === 6 }; });
+  const weekMax = Math.max(minutes, ...week.map((w) => w.min));
+  const weekTotal = Math.round(week.reduce((a, w) => a + w.min, 0));
+  const items = stats.reduce((a, s) => a + (s.items ?? 0), 0);
   let streak = 0;
   const d = new Date();
   if (!active.has(todayKey(d))) d.setDate(d.getDate() - 1);
@@ -133,9 +145,22 @@ export default function Today() {
             )}
 
             <section className="mt-12">
+              <div className="flex items-baseline justify-between"><Kicker>Cette semaine</Kicker><Kicker>≈ {weekTotal} phút</Kicker></div>
+              <div className="rule mt-3" />
+              <div className="mt-4 grid h-[88px] grid-cols-7 items-end gap-3" role="img" aria-label={`Khoảng ${weekTotal} phút trong 7 ngày`}>
+                {week.map((w) => (
+                  <div key={w.key} className="flex h-full flex-col items-center justify-end">
+                    <div className="w-full" style={{ height: `${Math.max(w.min > 0 ? 6 : 1, (w.min / weekMax) * 64)}px`, background: w.min > 0 ? (w.today ? 'var(--accent)' : 'var(--ink-2)') : 'var(--rule)' }} />
+                    <span className={`mt-2 text-[10px] font-medium uppercase tracking-[0.1em] ${w.today ? 'text-accent' : 'text-muted'}`}>{w.letter}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="mt-12">
               <div className="gold-rule" />
               <div className="grid grid-cols-3 gap-y-6 pt-6">
-                {[[streak, 'ngày liên tiếp'], [shadowMin, 'phút shadowing'], [sentences, 'câu đã ghi'], [learned, 'từ đã học'], [ret === null ? '—' : `${Math.round(ret * 100)}`, 'nhớ đúng %'], [units.length, 'bài đã nhập']].map(([v, l]) => (
+                {[[streak, 'ngày liên tiếp'], [shadowMin, 'phút shadowing'], [sentences, 'câu đã ghi'], [learned, 'từ đã học'], [ret === null ? '—' : `${Math.round(ret * 100)}`, 'nhớ đúng %'], [items, 'câu luyện tập']].map(([v, l]) => (
                   <div key={String(l)}>
                     <div className="t-num text-[40px] leading-none">{v}</div>
                     <div className="t-label mt-2 !text-[10px]">{l}</div>

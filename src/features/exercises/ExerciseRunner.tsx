@@ -62,7 +62,12 @@ export default function ExerciseRunner({ unit, ex, onNext }: { unit: Unit; ex: E
       case 'anagram': return <Anagram {...props} />;
       case 'computed-age': return <Ages {...props} />;
       case 'wordsearch': return <WordSearch {...props} />;
-      case 'writing': return <p className="t-body text-ink2">Phần viết (có sửa bài bằng AI) sẽ có ở giai đoạn 3.</p>;
+      case 'writing': return (
+        <div>
+          <p className="t-body measure text-ink2">Bài viết có trình soạn riêng: thanh gõ dấu, tự kiểm tra lỗi thường gặp, và chữa bằng AI nếu bạn có API key.</p>
+          <Link className="btn btn-primary mt-6 w-full" to={`/write/${unit.id}/${String((ex as { taskId?: string }).taskId ?? '')}`}><Icon name="edit" size={14} />Mở trình viết</Link>
+        </div>
+      );
       default: return <SelfMark {...props} />;
     }
   })();

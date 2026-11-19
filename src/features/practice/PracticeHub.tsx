@@ -25,6 +25,7 @@ export default function PracticeHub() {
     { to: '/practice/dictee', kicker: 'Nghe', title: 'Dictée', sub: 'Nghe từng câu, gõ lại — tách lỗi dấu và lỗi chính tả' },
     { to: '/practice/gaps', kicker: 'Nghe', title: 'Trous à l’écoute', sub: 'Nghe và điền các từ bị che' },
     { to: '/practice/read', kicker: 'Đọc', title: 'Lire', sub: 'Văn bản của sách · chạm một từ để tra' },
+    { to: '/write', kicker: 'Viết', title: 'Écrire', sub: 'Đề viết của sách · tự kiểm tra · chữa bằng AI (tuỳ chọn)' },
     { to: '/practice/verbs', kicker: 'Ngữ pháp', title: 'Conjugaison', sub: verbs ? `${verbs} động từ · lỗi cũ hỏi trước` : 'Có khi nhập bài có động từ' },
     { to: '/practice/articles', kicker: 'Ngữ pháp', title: 'Le ou la ?', sub: 'Giống của danh từ — un / une, le / la, l’' },
     { to: '/practice/agreement', kicker: 'Ngữ pháp', title: 'Il est… elle est…', sub: 'Quốc tịch giống đực / giống cái' },

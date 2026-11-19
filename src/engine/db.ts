@@ -30,7 +30,7 @@ export interface CardRow extends FsrsCard {
 }
 export interface ReviewLogRow { id?: number; cardId: string; rating: number; reviewedAt: Date; elapsedMs: number }
 export interface LadderRow { docId: string; unlocked: number; counts: Record<number, number>; updatedAt: Date }
-export interface StatRow { date: string; shadowMs: number; sentences: number; reviews: number; correct: number; newCards: number }
+export interface StatRow { date: string; shadowMs: number; sentences: number; reviews: number; correct: number; newCards: number; items?: number; writing?: number }
 export interface SettingRow { key: string; value: unknown }
 export interface PitchRow { key: string; data: number[]; updatedAt: Date }
 export interface CustomCardRow { id: string; front: string; back: string; ipa?: string; gender?: 'm' | 'f' | 'mf'; createdAt: Date }
@@ -42,6 +42,16 @@ export interface ErrorLogRow {
   dueAt?: Date;          // not before this time
 }
 export interface ExerciseResultRow { id: string; unitId: string; skill: string; best: number; last: number; attempts: number; updatedAt: Date }
+/** A piece of writing. `versions` keeps every corrected submission so you can compare then and now. */
+export interface DraftRow {
+  id: string;                 // `${unitId}:${taskId}` for book tasks, `free:${n}` for free writing
+  unitId: string | null;
+  taskId: string | null;
+  title: string;
+  text: string;
+  updatedAt: Date;
+  versions: { at: Date; text: string; feedback?: unknown; model?: string; costUsd?: number; selfCheck?: number }[];
+}
 
 class StudyDB extends Dexie {
   packs!: Table<PackRow, string>;
@@ -60,6 +70,7 @@ class StudyDB extends Dexie {
   customCards!: Table<CustomCardRow, string>;
   errorLog!: Table<ErrorLogRow, number>;
   exerciseResults!: Table<ExerciseResultRow, string>;
+  drafts!: Table<DraftRow, string>;
 
   constructor() {
     super('edition-study');
@@ -85,6 +96,8 @@ class StudyDB extends Dexie {
       exerciseResults: 'id, unitId, skill, updatedAt',
       errorLog: '++id, source, createdAt, resolved, ref',
     });
+    // Phase 3: writing drafts with their corrected versions.
+    this.version(3).stores({ drafts: 'id, unitId, updatedAt' });
   }
 }
 
@@ -108,7 +121,7 @@ export async function bumpStat(patch: Partial<Omit<StatRow, 'date'>>) {
   const date = todayKey();
   await db.transaction('rw', db.stats, async () => {
     const row = (await db.stats.get(date)) ?? { date, shadowMs: 0, sentences: 0, reviews: 0, correct: 0, newCards: 0 };
-    for (const [k, v] of Object.entries(patch)) (row as any)[k] += v as number;
+    for (const [k, v] of Object.entries(patch)) (row as any)[k] = ((row as any)[k] ?? 0) + (v as number);
     await db.stats.put(row);
   });
 }

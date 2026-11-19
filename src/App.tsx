@@ -23,6 +23,7 @@ import { ExercisePage, GroupExercises } from './features/exercises/ExercisePages
 import { Dictee, GapListen, ListenTracks } from './features/listen/Listening';
 import { Reader, ReadHome } from './features/read/Reading';
 import { AgreementTrainer, ArticleTrainer, ErrorLog, VerbTrainer } from './features/grammar/Trainers';
+import { WriteHome, WriteTask } from './features/write/Writing';
 import { Icon, type IconName } from './ui/icons';
 import { ErrorBoundary } from './ui/ErrorBoundary';
 
@@ -48,13 +49,13 @@ const TABS: { to: string; label: string; icon: IconName }[] = [
 function BottomNav() {
   const loc = useLocation();
   // Full-screen practice views hide the tab bar to keep thumbs on the controls.
-  if (/^\/(studio\/.+|cards\/review|lab\/(pairs|spell)|practice\/((dictee|gaps)\/.+|verbs|articles|agreement))/.test(loc.pathname)) return null;
+  if (/^\/(studio\/.+|cards\/review|lab\/(pairs|spell)|practice\/((dictee|gaps)\/.+|verbs|articles|agreement)|write\/.+)/.test(loc.pathname)) return null;
   return (
     <nav className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-[var(--rule)]" style={{ background: 'var(--paper)' }}>
       <div className="mx-auto grid max-w-[600px] grid-cols-5 px-2">
         {TABS.map((t) => (
           <NavLink key={t.to} to={t.to} end={t.to === '/'}
-            className={({ isActive }) => `${isActive || (t.to === '/practice' && loc.pathname.startsWith('/lab')) ? 'text-accent' : 'text-muted'} flex min-h-[56px] flex-col items-center justify-center gap-1.5 transition-colors duration-300`}>
+            className={({ isActive }) => `${isActive || (t.to === '/practice' && /^\/(lab|write)/.test(loc.pathname)) ? 'text-accent' : 'text-muted'} flex min-h-[56px] flex-col items-center justify-center gap-1.5 transition-colors duration-300`}>
             <Icon name={t.icon} size={21} />
             <span className="text-[9.5px] font-medium uppercase tracking-[0.12em]">{t.label}</span>
           </NavLink>
@@ -95,6 +96,9 @@ export default function App() {
         <Route path="/cards/add" element={<AddCard />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/practice" element={<PracticeHub />} />
+        <Route path="/write" element={<WriteHome />} />
+        <Route path="/write/free/:draftId" element={<WriteTask />} />
+        <Route path="/write/:unitId/:taskId" element={<WriteTask />} />
         <Route path="/practice/errors" element={<ErrorLog />} />
         <Route path="/practice/verbs" element={<VerbTrainer />} />
         <Route path="/practice/articles" element={<ArticleTrainer />} />

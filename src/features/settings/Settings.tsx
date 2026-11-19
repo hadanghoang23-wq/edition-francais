@@ -4,6 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { download, exportBackup, importBackup } from '../../engine/backup';
 import { db, setSetting } from '../../engine/db';
 import { deletePack } from '../../engine/pack';
+import { AI_MODELS, DEFAULT_MODEL, type AiModel } from '../../engine/aiConfig';
 import { Kicker, Options, Page, Section, Toast, TopBar, two } from '../../ui/kit';
 import { Icon } from '../../ui/icons';
 
@@ -17,6 +18,9 @@ export default function Settings() {
   const [minutes, setMinutes] = useSetting('dailyMinutes', 75);
   const [newPerDay, setNewPerDay] = useSetting('newPerDay', 15);
   const [apiKey, setApiKey] = useSetting('apiKey', '');
+  const [aiModel, setAiModel] = useSetting<AiModel>('aiModel', DEFAULT_MODEL);
+  const [aiUsage] = useSetting('aiUsage', { calls: 0, usd: 0 });
+  const [keyState, setKeyState] = useState<string | null>(null);
   const packs = useLiveQuery(() => db.packs.toArray(), []);
   const overrides = useLiveQuery(() => db.overrides.count(), []);
   const [usage, setUsage] = useState<string>('');
@@ -78,10 +82,23 @@ export default function Settings() {
           <button className="btn btn-text mt-2 !px-0" disabled={!overrides} onClick={exportOverrides}>Xuất {overrides ?? 0} mốc câu đã chỉnh cho pipeline</button>
         </Section>
 
-        <Section n="06" title="Anthropic API key · không bắt buộc">
-          <p className="t-small measure mt-4 text-ink2">Dùng cho phần sửa bài viết bằng AI (giai đoạn 3). Chỉ lưu trong máy này; app vẫn dùng đầy đủ khi không có key.</p>
-          <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="sk-ant-…" autoComplete="off" aria-label="Anthropic API key"
+        <Section n="06" title="Chữa bài bằng AI · không bắt buộc">
+          <p className="t-small measure mt-4 text-ink2">Dùng Anthropic API key của chính bạn để Claude chữa bài viết và giải thích bằng tiếng Việt. Key chỉ lưu trong máy này, chỉ gửi tới api.anthropic.com, không có trong bản sao lưu. Không có key, app vẫn dùng đầy đủ (phần tự kiểm tra chạy không cần mạng).</p>
+          <input type="password" value={apiKey} onChange={(e) => { setApiKey(e.target.value); setKeyState(null); }} placeholder="sk-ant-…" autoComplete="off" aria-label="Anthropic API key"
             className="ipa mt-4 w-full border-b border-[var(--rule-strong)] bg-transparent py-3 !text-[14px] outline-none placeholder:text-faint focus:border-[var(--ink)]" />
+          <div className="mt-5"><Kicker>Mô hình</Kicker></div>
+          <div className="mt-2"><Options value={aiModel} onChange={(v) => { setAiModel(v); setKeyState(null); }} options={AI_MODELS.map((m) => [m.id, m.label] as [AiModel, string])} /></div>
+          <p className="t-meta mt-2">{AI_MODELS.find((m) => m.id === aiModel)?.note}. Một lần chữa bài A1 thường tốn dưới 0,05 USD với Opus.</p>
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <button className="btn btn-line" disabled={!apiKey.trim() || keyState === '…'} onClick={async () => {
+              setKeyState('…');
+              const { testKey, aiErrorVi } = await import('../../engine/ai');
+              try { setKeyState(`Kết nối được · ${await testKey(apiKey.trim(), aiModel)}`); } catch (e) { setKeyState(await aiErrorVi(e)); }
+            }}>{keyState === '…' ? 'Đang thử…' : 'Thử kết nối'}</button>
+            <button className="btn btn-text" disabled={!apiKey} onClick={() => { if (confirm('Xoá API key khỏi máy này?')) { setApiKey(''); setKeyState(null); } }}>Xoá key</button>
+          </div>
+          {keyState && keyState !== '…' && <p className="t-small mt-3" style={{ color: keyState.startsWith('Kết nối') ? 'var(--ok)' : 'var(--accent)' }}>{keyState}</p>}
+          {aiUsage.calls > 0 && <p className="t-meta mt-3">Đã chữa {aiUsage.calls} lần · ước tính tổng {aiUsage.usd.toFixed(2)} USD (theo bảng giá công khai, chỉ để tham khảo).</p>}
         </Section>
 
         <section className="mt-16 text-center">
